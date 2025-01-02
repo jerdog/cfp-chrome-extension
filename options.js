@@ -287,7 +287,10 @@ class OptionsPage {
         const container = document.getElementById('talksContainer');
         if (!container) return;
 
-        container.innerHTML = this.state.talks.map((talk, index) => `
+        // Sort talks alphabetically by title
+        const sortedTalks = this.state.talks.slice().sort((a, b) => a.title.localeCompare(b.title));
+
+        container.innerHTML = sortedTalks.map((talk, index) => `
             <div class="talk-item">
                 <div class="talk-details">
                     <strong>${talk.title}</strong>&nbsp;(${talk.duration} mins, ${talk.level})
