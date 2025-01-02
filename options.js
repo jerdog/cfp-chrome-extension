@@ -117,6 +117,7 @@ class OptionsPage {
         this.handleDownloadTemplate = this.handleDownloadTemplate.bind(this);
         this.loadSessionizeUrl = this.loadSessionizeUrl.bind(this);
         this.saveSessionizeUrl = this.saveSessionizeUrl.bind(this);
+        this.fetchSessionizeTalks = this.fetchSessionizeTalks.bind(this);
         this.openTalkModal = this.openTalkModal.bind(this);
         this.closeTalkModal = this.closeTalkModal.bind(this);
         this.handleAddTalk = this.handleAddTalk.bind(this);
@@ -137,6 +138,61 @@ class OptionsPage {
             input.value = sessionizeUrl;
         }
     }
+
+    async fetchSessionizeTalks() {
+    const statusElement = document.getElementById('fetchSessionizeStatus');
+    statusElement.textContent = '';
+    statusElement.style.color = '';
+
+    const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
+    if (!sessionizeUrl) {
+        statusElement.textContent = 'Please set your Sessionize API URL.';
+        statusElement.style.color = 'red';
+        return;
+    }
+
+    try {
+        const response = await fetch(sessionizeUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const rawData = await response.json();
+        const talks = Array.isArray(rawData) ? rawData : rawData.sessions || [];
+        const formattedTalks = talks.map(talk => ({
+            title: talk.title || 'Untitled',
+            description: talk.description || 'No description provided.',
+            duration: parseInt(talk.duration || '0', 10),
+            level: talk.level || 'Beginner',
+        }));
+
+        // Get existing talks from storage
+        const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+
+        // Filter out duplicate talks
+        const newTalks = formattedTalks.filter(newTalk =>
+            !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
+        );
+
+        if (newTalks.length > 0) {
+            this.state.talks = [...existingTalks, ...newTalks];
+            await chrome.storage.local.set({ talks: this.state.talks });
+            this.renderTalks();
+        }
+
+        statusElement.textContent = `Successfully added ${newTalks.length} new talks. ${formattedTalks.length - newTalks.length} duplicates skipped.`;
+        statusElement.style.color = 'green';
+    } catch (error) {
+        console.error('Error fetching from Sessionize:', error);
+        statusElement.textContent = 'Failed to fetch talks. Check the URL.';
+        statusElement.style.color = 'red';
+    }
+
+    // Clear the status message after 3 seconds
+    setTimeout(() => {
+        statusElement.textContent = '';
+    }, 3000);
+}
 
     async saveSessionizeUrl() {
         const sessionizeUrl = document.getElementById('sessionizeUrl').value;
@@ -382,6 +438,7 @@ class OptionsPage {
 
         // Other event listeners
         document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
+        document.getElementById('fetchSessionizeBtn').addEventListener('click', this.fetchSessionizeTalks);
         document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
         document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk);
         document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
