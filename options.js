@@ -96,198 +96,133 @@ class CustomFieldsManager {
 }
 
 class OptionsPage {
-  constructor() {
-      this.state = {
-          talks: [],
-          customFields: []
-      };
+    constructor() {
+        this.state = { talks: [] };
 
-      // Bind methods
-      this.loadTalks = this.loadTalks.bind(this);
-      this.setupDynamicListeners = this.setupDynamicListeners.bind(this);
-      this.saveSettings = this.saveSettings.bind(this);
-      this.loadSettings = this.loadSettings.bind(this);
-      this.handleSelectAll = this.handleSelectAll.bind(this);
-      this.handleDeleteSelected = this.handleDeleteSelected.bind(this);
-      this.handleCustomFieldAdd = this.handleCustomFieldAdd.bind(this);
-      this.handleModalClose = this.handleModalClose.bind(this);
-      this.handleAddFieldSubmit = this.handleAddFieldSubmit.bind(this);
-  }
+        // Bind methods
+        this.loadTalks = this.loadTalks.bind(this);
+        this.renderTalks = this.renderTalks.bind(this);
+        this.handleEditTalk = this.handleEditTalk.bind(this);
+        this.handleDeleteTalk = this.handleDeleteTalk.bind(this);
+        this.handleAddTalk = this.handleAddTalk.bind(this);
+        this.handleSaveTalk = this.handleSaveTalk.bind(this);
+        this.handleDeleteAll = this.handleDeleteAll.bind(this);
+    }
 
-  async loadTalks() {
-      try {
-          const { talks = [] } = await chrome.storage.local.get(['talks']);
-          this.state.talks = talks;
-          this.renderTalks();
-      } catch (error) {
-          console.error('Error loading talks:', error);
-      }
-  }
+    async loadTalks() {
+        const { talks = [] } = await chrome.storage.local.get(['talks']);
+        this.state.talks = talks;
+        this.renderTalks();
+    }
 
-  async loadSettings() {
-      try {
-          const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
-          if (sessionizeUrl) {
-              document.getElementById('sessionizeUrl').value = sessionizeUrl;
-          }
-      } catch (error) {
-          console.error('Error loading settings:', error);
-      }
-  }
+    renderTalks() {
+        const container = document.getElementById('talksContainer');
+        if (!container) return;
 
-  saveSettings() {
-      const sessionizeUrl = document.getElementById('sessionizeUrl').value;
-      if (!sessionizeUrl) {
-          console.error('Sessionize URL cannot be empty.');
-          return;
-      }
+        container.innerHTML = this.state.talks.map((talk, index) => `
+            <div class="talk-item">
+                <div class="talk-details">
+                    <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
+                </div>
+                <div class="button-group">
+                    <button class="edit-btn" data-index="${index}">Edit</button>
+                    <button class="delete-btn" data-index="${index}">Delete</button>
+                </div>
+            </div>
+        `).join('');
 
-      chrome.storage.sync.set({ sessionizeUrl }, () => {
-          console.log('Sessionize URL saved:', sessionizeUrl);
-          alert('Settings saved!');
-      });
-  }
+        // Attach event listeners
+        container.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', this.handleEditTalk);
+        });
 
-  renderTalks() {
-      const container = document.getElementById('talksContainer');
-      if (!container) return;
+        container.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', this.handleDeleteTalk);
+        });
+    }
 
-      container.innerHTML = this.generateTalksTable(this.state.talks);
-      this.setupDynamicListeners(); // Attach listeners for dynamically rendered elements
-  }
+    handleEditTalk(event) {
+        const index = event.target.dataset.index;
+        const talk = this.state.talks[index];
+        if (!talk) return;
 
-  generateTalksTable(talks) {
-      return `
-          <table class="talks-table">
-              <thead>
-                  <tr>
-                      <th><input type="checkbox" id="selectAll"></th>
-                      <th>Title</th>
-                      <th>Level</th>
-                      <th>Duration</th>
-                      <th>Actions</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  ${talks.map((talk, index) => `
-                      <tr>
-                          <td><input type="checkbox" class="talk-select" data-index="${index}"></td>
-                          <td>${talk.title}</td>
-                          <td>${talk.level}</td>
-                          <td>${talk.duration}</td>
-                          <td><button class="edit-button" data-index="${index}">Edit</button></td>
-                      </tr>
-                  `).join('')}
-              </tbody>
-          </table>
-      `;
-  }
+        document.getElementById('talkTitle').value = talk.title;
+        document.getElementById('talkDescription').value = talk.description;
+        document.getElementById('talkDuration').value = talk.duration;
+        document.getElementById('talkLevel').value = talk.level;
 
-  setupDynamicListeners() {
-      const container = document.getElementById('talksContainer');
-      if (!container) return;
+        document.getElementById('saveTalkBtn').dataset.index = index;
+        this.openModal();
+    }
 
-      container.querySelectorAll('.talk-select').forEach(checkbox => {
-          checkbox.addEventListener('change', this.updateSelectedCount);
-      });
+    async handleDeleteTalk(event) {
+        const index = event.target.dataset.index;
+        const talks = this.state.talks.filter((_, i) => i != index);
 
-      container.querySelectorAll('.edit-button').forEach(button => {
-          const index = button.dataset.index;
-          button.addEventListener('click', () => this.editTalk(index));
-      });
-  }
+        await chrome.storage.local.set({ talks });
+        this.state.talks = talks;
+        this.renderTalks();
+    }
 
-  handleSelectAll(e) {
-      const checkboxes = document.querySelectorAll('.talk-select');
-      checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
-      this.updateSelectedCount();
-  }
+    async handleDeleteAll() {
+        if (!confirm('Are you sure you want to delete all talks?')) return;
 
-  async handleDeleteSelected() {
-      const selectedIndices = Array.from(
-          document.querySelectorAll('.talk-select:checked')
-      ).map(checkbox => parseInt(checkbox.dataset.index));
+        await chrome.storage.local.set({ talks: [] });
+        this.state.talks = [];
+        this.renderTalks();
+    }
 
-      if (selectedIndices.length === 0) {
-          ErrorHandler.showError('No talks selected');
-          return;
-      }
+    handleAddTalk() {
+        document.getElementById('talkTitle').value = '';
+        document.getElementById('talkDescription').value = '';
+        document.getElementById('talkDuration').value = '';
+        document.getElementById('talkLevel').value = 'Beginner';
 
-      if (confirm(`Delete ${selectedIndices.length} selected talks?`)) {
-          await TalkManager.deleteTalks(selectedIndices);
-          await this.loadTalks();
-      }
-  }
+        delete document.getElementById('saveTalkBtn').dataset.index;
+        this.openModal();
+    }
 
-  handleCustomFieldAdd() {
-      const modal = document.getElementById('addFieldModal');
-      const backdrop = document.getElementById('modalBackdrop');
-      modal.style.display = 'block';
-      backdrop.style.display = 'block';
-  }
+    async handleSaveTalk() {
+        const index = document.getElementById('saveTalkBtn').dataset.index;
+        const newTalk = {
+            title: document.getElementById('talkTitle').value,
+            description: document.getElementById('talkDescription').value,
+            duration: parseInt(document.getElementById('talkDuration').value),
+            level: document.getElementById('talkLevel').value,
+        };
 
-  handleModalClose() {
-      const modal = document.getElementById('addFieldModal');
-      const backdrop = document.getElementById('modalBackdrop');
-      modal.style.display = 'none';
-      backdrop.style.display = 'none';
-  }
+        if (index !== undefined) {
+            this.state.talks[index] = newTalk;
+        } else {
+            this.state.talks.push(newTalk);
+        }
 
-  async handleAddFieldSubmit(e) {
-      e.preventDefault();
-      const fieldName = document.getElementById('fieldName').value;
-      const fieldDefaultValue = document.getElementById('fieldDefaultValue').value;
-      const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
-      customFields.push({ name: fieldName, defaultValue: fieldDefaultValue });
-      await chrome.storage.sync.set({ customFields });
-      await this.loadCustomFields();
-      this.handleModalClose();
-  }
+        await chrome.storage.local.set({ talks: this.state.talks });
+        this.renderTalks();
+        this.closeModal();
+    }
 
-  async loadCustomFields() {
-      const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
-      const container = document.getElementById('customFieldsList');
+    openModal() {
+        document.getElementById('addEditModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
 
-      if (!container) return;
+    closeModal() {
+        document.getElementById('addEditModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+    }
 
-      container.innerHTML = customFields.map((field, index) => `
-          <div class="custom-field" data-index="${index}">
-              <span>${field.name}: ${field.defaultValue}</span>
-              <button class="delete-field-btn" data-index="${index}">Delete</button>
-          </div>
-      `).join('');
-  }
+    async init() {
+        await this.loadTalks();
 
-  updateSelectedCount() {
-      const selectedCount = document.querySelectorAll('.talk-select:checked').length;
-      const countDisplay = document.getElementById('selectedCount');
-      const deleteButton = document.getElementById('deleteSelected');
-
-      if (countDisplay) {
-          countDisplay.textContent = `${selectedCount} talk(s) selected`;
-      }
-
-      if (deleteButton) {
-          deleteButton.disabled = selectedCount === 0;
-      }
-  }
-
-  async init() {
-      try {
-          await this.loadSettings();
-          await this.loadTalks();
-
-          document.getElementById('save').addEventListener('click', this.saveSettings);
-          document.getElementById('addCustomField')?.addEventListener('click', this.handleCustomFieldAdd);
-          document.getElementById('closeModal')?.addEventListener('click', this.handleModalClose);
-          document.getElementById('addFieldForm')?.addEventListener('submit', this.handleAddFieldSubmit);
-      } catch (error) {
-          console.error('Initialization error:', error);
-      }
-  }
+        document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
+        document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk.bind(this));
+        document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll.bind(this));
+        document.getElementById('closeModal').addEventListener('click', this.closeModal.bind(this));
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const optionsPage = new OptionsPage();
-  optionsPage.init().catch(console.error);
+    const optionsPage = new OptionsPage();
+    optionsPage.init();
 });
