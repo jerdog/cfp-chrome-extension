@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
+
+    // Link to options page
+    document.getElementById('optionsLink').addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
 });
 
 async function loadTalkSelector() {
