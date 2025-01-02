@@ -105,52 +105,6 @@ class CustomFieldsManager {
       }
   }
 }
-
-function parseCsv(csvContent) {
-    const rows = [];
-    let currentRow = [];
-    let currentField = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < csvContent.length; i++) {
-        const char = csvContent[i];
-        const nextChar = csvContent[i + 1];
-
-        if (char === '"' && inQuotes && nextChar === '"') {
-            // Escaped quote
-            currentField += '"';
-            i++; // Skip the next quote
-        } else if (char === '"' && !inQuotes) {
-            // Start of a quoted field
-            inQuotes = true;
-        } else if (char === '"' && inQuotes) {
-            // End of a quoted field
-            inQuotes = false;
-        } else if (char === ',' && !inQuotes) {
-            // End of a field
-            currentRow.push(currentField);
-            currentField = '';
-        } else if (char === '\n' && !inQuotes) {
-            // End of a row
-            currentRow.push(currentField);
-            rows.push(currentRow);
-            currentRow = [];
-            currentField = '';
-        } else {
-            // Regular character
-            currentField += char;
-        }
-    }
-
-    // Push the last row if not already added
-    if (currentField || currentRow.length > 0) {
-        currentRow.push(currentField);
-        rows.push(currentRow);
-    }
-
-    return rows;
-}
-
 class OptionsPage {
     constructor() {
         this.state = { talks: [] };
@@ -158,8 +112,6 @@ class OptionsPage {
         // Bind methods
         this.loadTalks = this.loadTalks.bind(this);
         this.renderTalks = this.renderTalks.bind(this);
-        this.handleImportCsv = this.handleImportCsv.bind(this);
-        this.handleDownloadTemplate = this.handleDownloadTemplate.bind(this);
         this.loadSessionizeUrl = this.loadSessionizeUrl.bind(this);
         this.saveSessionizeUrl = this.saveSessionizeUrl.bind(this);
         this.fetchSessionizeTalks = this.fetchSessionizeTalks.bind(this);
@@ -376,7 +328,7 @@ class OptionsPage {
         this.closeCustomFieldModal();
     }
 
-    async exportTalksAsCsv() {
+    async exportTalksAsJson() {
         const { talks = [] } = await chrome.storage.local.get(['talks']);
 
         if (!talks.length) {
@@ -384,29 +336,12 @@ class OptionsPage {
             return;
         }
 
-        // Ensure CSV header
-        const csvHeader = `"Title","Description","Duration","Level"`;
-
-        // Map talks into CSV rows
-        const csvContent = talks.map(talk => {
-            const title = talk.title || 'Untitled';
-            const description = talk.description || 'No description provided.';
-            const duration = talk.duration !== undefined ? talk.duration : 'Unknown';
-            const level = talk.level || 'Beginner';
-
-            // Escape quotes and enclose fields in double quotes
-            return `"${title.replace(/"/g, '""')}","${description.replace(/"/g, '""')}","${duration}","${level}"`;
-        }).join('\n');
-
-        const csv = `${csvHeader}\n${csvContent}`;
-
-        // Create and download the CSV file
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([JSON.stringify(talks, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'talks.csv';
+        a.download = 'talks.json';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -415,17 +350,17 @@ class OptionsPage {
         const container = document.getElementById('talksContainer');
         if (!container) return;
 
-        // Sort talks alphabetically by title
         const sortedTalks = this.state.talks.slice().sort((a, b) => a.title.localeCompare(b.title));
 
-        container.innerHTML = sortedTalks.map((talk, index) => `
+        container.innerHTML = sortedTalks.map(talk => `
             <div class="talk-item">
                 <div class="talk-details">
-                    <strong>${talk.title}</strong>&nbsp;(${talk.duration} mins, ${talk.level})
+                    <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
+                    <p>${talk.description}</p>
                 </div>
                 <div>
-                    <button class="edit-btn" data-index="${index}">Edit</button>
-                    <button class="delete-btn" data-index="${index}">Delete</button>
+                    <button class="edit-btn" data-index="${this.state.talks.indexOf(talk)}">Edit</button>
+                    <button class="delete-btn" data-index="${this.state.talks.indexOf(talk)}">Delete</button>
                 </div>
             </div>
         `).join('');
@@ -504,65 +439,39 @@ class OptionsPage {
         document.getElementById('modalBackdrop').style.display = 'none';
     }
 
-    handleImportCsv(event) {
+    async importTalksFromJson(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const content = e.target.result;
+            try {
+                const importedTalks = JSON.parse(e.target.result);
 
-            // Parse CSV content
-            const rows = parseCsv(content);
+                if (!Array.isArray(importedTalks)) {
+                    throw new Error('Invalid JSON format. Expected an array of talks.');
+                }
 
-            // Validate header
-            const [headers, ...dataRows] = rows;
-            if (!headers || headers.length < 4 || headers[0] !== 'Title' || headers[1] !== 'Description' || headers[2] !== 'Duration' || headers[3] !== 'Level') {
-                alert('Invalid CSV format. Ensure headers are: "Title, Description, Duration, Level".');
-                document.getElementById('importCsv').value = ''; // Reset file input
-                return;
+                const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+                const uniqueTalks = importedTalks.filter(newTalk =>
+                    !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
+                );
+
+                if (uniqueTalks.length > 0) {
+                    const updatedTalks = [...existingTalks, ...uniqueTalks];
+                    await chrome.storage.local.set({ talks: updatedTalks });
+                    this.loadTalks();
+                    alert(`${uniqueTalks.length} new talks imported successfully. ${importedTalks.length - uniqueTalks.length} duplicates skipped.`);
+                } else {
+                    alert('All imported talks already exist. No new talks were added.');
+                }
+            } catch (error) {
+                console.error('Error importing JSON:', error);
+                alert('Failed to import talks. Please ensure the file is a valid JSON.');
             }
-
-            // Map rows to talk objects
-            const newTalks = dataRows.map(row => ({
-                title: row[0] || 'Untitled',
-                description: row[1] || 'No description provided.',
-                duration: row[2] || 'Unknown',
-                level: row[3] || 'Beginner',
-            })).filter(talk => talk.title); // Exclude rows with empty titles
-
-            // Check for duplicates
-            const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
-            const uniqueTalks = newTalks.filter(newTalk =>
-                !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
-            );
-
-            if (uniqueTalks.length > 0) {
-                const updatedTalks = [...existingTalks, ...uniqueTalks];
-                await chrome.storage.local.set({ talks: updatedTalks });
-                this.loadTalks();
-                alert(`${uniqueTalks.length} new talks imported successfully. ${newTalks.length - uniqueTalks.length} duplicates skipped.`);
-            } else {
-                alert('All talks in the CSV already exist. No new talks were added.');
-            }
-
-            document.getElementById('importCsv').value = ''; // Reset file input
         };
 
         reader.readAsText(file);
-    }
-
-    handleDownloadTemplate() {
-        const csvContent = 'Title,Description,Duration,Level\n';
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'talks_template.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 
     openCustomFieldModal() {
@@ -594,48 +503,12 @@ class OptionsPage {
             document.getElementById('importSettingsInput').click();
         });
         document.getElementById('importSettingsInput').addEventListener('change', this.importSettings.bind(this));
-        document.getElementById('exportTalksBtn').addEventListener('click', this.exportTalksAsCsv);
-
-        // CSV Import/Upload Event Listener
-        document.getElementById('uploadCsvBtn').addEventListener('click', () => {
-            const fileInput = document.getElementById('importCsv');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert('Please select a CSV file before uploading.');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const content = e.target.result;
-                const rows = content.split('\n').map(row => row.split(','));
-
-                const talks = rows.slice(1).map(row => ({
-                    title: row[0]?.trim() || '',
-                    description: row[1]?.trim() || '',
-                    duration: parseInt(row[2]?.trim() || '0', 10),
-                    level: row[3]?.trim() || 'Beginner',
-                })).filter(talk => talk.title); // Filter out rows with empty titles
-
-                if (talks.length === 0) {
-                    alert('No valid talks found in the uploaded CSV file.');
-                    fileInput.value = ''; // Reset file input
-                    return;
-                }
-
-                const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
-                const updatedTalks = [...existingTalks, ...talks];
-
-                await chrome.storage.local.set({ talks: updatedTalks });
-                this.loadTalks();
-
-                alert('Talks imported successfully!');
-                fileInput.value = ''; // Reset file input
-            };
-
-            reader.readAsText(file);
+        document.getElementById('importJsonBtn').addEventListener('click', () => {
+            document.getElementById('importJson').click();
         });
+        document.getElementById('importJson').addEventListener('change', this.importTalksFromJson.bind(this));
+        document.getElementById('exportJsonBtn').addEventListener('click', this.exportTalksAsJson.bind(this));
+
     }
 }
 
