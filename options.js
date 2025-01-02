@@ -135,12 +135,32 @@ class OptionsPage {
 
     async saveSessionizeUrl() {
         const sessionizeUrl = document.getElementById('sessionizeUrl').value;
+        const statusMessage = document.createElement('span');
+        const button = document.getElementById('saveSessionizeBtn');
+        let existingMessage = button.nextSibling;
+
+        // Clear existing status message
+        if (existingMessage && existingMessage.nodeName === 'SPAN') {
+            button.parentNode.removeChild(existingMessage);
+        }
+
         if (!sessionizeUrl) {
-            alert('Sessionize URL cannot be empty.');
+            statusMessage.textContent = 'Sessionize URL cannot be empty.';
+            statusMessage.style.color = 'red';
+            button.parentNode.insertBefore(statusMessage, button.nextSibling);
             return;
         }
+
         await chrome.storage.sync.set({ sessionizeUrl });
-        alert('Sessionize URL saved successfully!');
+        statusMessage.textContent = 'Sessionize URL saved successfully!';
+        statusMessage.style.color = 'green';
+        button.parentNode.insertBefore(statusMessage, button.nextSibling);
+
+        setTimeout(() => {
+            if (statusMessage) {
+                statusMessage.remove();
+            }
+        }, 3000);
     }
 
     async loadCustomFields() {
