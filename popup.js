@@ -1,30 +1,19 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load talks when the popup is opened
     await loadTalkSelector();
 
-    // Add event listener for the "Fetch from Sessionize" button
     document.getElementById('fetchSessionize').addEventListener('click', async () => {
         try {
             const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
-            console.log('Retrieved sessionizeUrl:', sessionizeUrl);
-
             if (!sessionizeUrl) {
                 alert('Please set your Sessionize API URL in the extension settings first');
                 return;
             }
 
             const response = await fetch(sessionizeUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const rawData = await response.json();
-            console.log('Raw Sessionize data:', rawData);
 
-            // Transform Sessionize data into the expected format
-            const talks = Array.isArray(rawData) ? rawData :
-                Array.isArray(rawData.sessions) ? rawData.sessions : [];
-
+            const talks = Array.isArray(rawData) ? rawData : rawData.sessions || [];
             const formattedTalks = talks.map(talk => ({
                 title: talk.title || 'Untitled',
                 description: talk.description || 'No description provided.',
@@ -32,9 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 level: talk.level || 'Beginner',
             }));
 
-            console.log('Formatted talks:', formattedTalks);
-
-            // Save the talks to local storage
             await chrome.storage.local.set({ talks: formattedTalks });
             await loadTalkSelector();
             alert(`Successfully loaded ${formattedTalks.length} talks`);
@@ -44,20 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Add filter change handlers
-    document.getElementById('levelFilter').addEventListener('change', loadTalkSelector);
-    document.getElementById('durationFilter').addEventListener('change', loadTalkSelector);
+    document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
 });
 
-// Helper functions
 async function loadTalkSelector() {
     const { talks = [] } = await chrome.storage.local.get(['talks']);
-    console.log('Loaded talks:', talks);
-
-    if (!Array.isArray(talks)) {
-        console.error('Talks is not an array:', talks);
-        return;
-    }
 
     const selector = document.getElementById('talkSelector');
     selector.innerHTML = '<option value="">Select a talk...</option>';
@@ -68,8 +45,6 @@ async function loadTalkSelector() {
         option.textContent = talk.title;
         selector.appendChild(option);
     });
-
-    selector.addEventListener('change', displaySelectedTalk);
 }
 
 async function displaySelectedTalk() {
@@ -87,12 +62,45 @@ async function displaySelectedTalk() {
 
     if (!talk) return;
 
-    detailsContainer.innerHTML = `
-        <div>
-            <strong>Title:</strong> ${talk.title}<br>
-            <strong>Description:</strong> ${talk.description}<br>
-            <strong>Duration:</strong> ${talk.duration} mins<br>
-            <strong>Level:</strong> ${talk.level}
+    const orderedFields = ['title', 'description', 'duration', 'level'];
+    detailsContainer.innerHTML = orderedFields.map(field => `
+        <div class="field-container">
+            <div class="field-label">${field.charAt(0).toUpperCase() + field.slice(1)}:</div>
+            <div class="field-content">${talk[field]}</div>
+            <button class="copy-btn" data-value="${talk[field]}">Copy</button>
+            <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
         </div>
-    `;
+    `).join('');
+
+    // Add event listeners to the copy buttons
+    detailsContainer.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const valueToCopy = button.getAttribute('data-value');
+            copyToClipboard(valueToCopy, button);
+        });
+    });
 }
+
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        const status = button.nextElementSibling;
+        status.style.display = 'inline';
+        setTimeout(() => {
+            status.style.display = 'none';
+        }, 2000);
+    }).catch(err => {
+        console.error('Error copying to clipboard:', err);
+        const status = button.nextElementSibling;
+        status.textContent = 'Failed to copy';
+        status.style.color = 'red';
+        status.style.display = 'inline';
+        setTimeout(() => {
+            status.style.display = 'none';
+            status.textContent = 'Copied!';
+            status.style.color = 'green';
+        }, 2000);
+    });
+}
+
+
+
