@@ -56,8 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.runtime.openOptionsPage();
     });
 
-    document.getElementById('importCsv').addEventListener('change', handleImportCsv);
-    document.getElementById('downloadTemplate').addEventListener('click', handleDownloadTemplate);
 });
 
 async function loadTalkSelector() {
