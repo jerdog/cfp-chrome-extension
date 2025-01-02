@@ -46,16 +46,35 @@
     }
     .talk-item {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 5px;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    .talk-title {
+      flex: 1 1 100%;
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 5px;
     }
     .talk-details {
+      flex: 1 1 calc(70% - 10px);
+      font-size: 0.95em;
+      color: #555;
+    }
+    .talk-actions {
+      flex: 1 1 calc(30% - 10px);
       display: flex;
-      max-width: 80%;
-      margin-right: 10px;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 5px;
+    }
+    .talk-actions button {
+      padding: 5px 10px;
+      font-size: 0.85em;
     }
     .custom-field-item {
       display: flex;

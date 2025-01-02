@@ -352,15 +352,19 @@ class OptionsPage {
 
         const sortedTalks = this.state.talks.slice().sort((a, b) => a.title.localeCompare(b.title));
 
-        container.innerHTML = sortedTalks.map(talk => `
+        container.innerHTML = sortedTalks.map((talk, index) => `
             <div class="talk-item">
-                <div class="talk-details">
-                    <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
-                    <p>${talk.description}</p>
+                <div class="talk-title">
+                    <strong>${talk.title}</strong>
                 </div>
-                <div>
-                    <button class="edit-btn" data-index="${this.state.talks.indexOf(talk)}">Edit</button>
-                    <button class="delete-btn" data-index="${this.state.talks.indexOf(talk)}">Delete</button>
+                <div class="talk-details">
+                    <p>${talk.description}</p>
+                    <p><strong>Duration:</strong> ${talk.duration || 'Unknown'} mins</p>
+                    <p><strong>Level:</strong> ${talk.level || 'Beginner'}</p>
+                </div>
+                <div class="talk-actions">
+                    <button class="edit-btn" data-index="${index}">Edit</button>
+                    <button class="delete-btn" data-index="${index}">Delete</button>
                 </div>
             </div>
         `).join('');
