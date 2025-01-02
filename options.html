@@ -73,6 +73,29 @@
     <a id="downloadTemplate" href="#">Download CSV Template</a>
   </div>
 
+  <div class="form-group">
+    <h3>Manage Custom Fields</h3>
+    <div id="customFieldsContainer"></div>
+    <button id="addCustomFieldBtn">Add Custom Field</button>
+</div>
+
+<!-- Add/Edit Custom Field Modal -->
+<div class="modal" id="addCustomFieldModal">
+    <h3 id="customFieldModalTitle">Add/Edit Custom Field</h3>
+    <div class="form-group">
+        <label for="customFieldName">Field Name:</label>
+        <input type="text" id="customFieldName">
+    </div>
+    <div class="form-group">
+        <label for="customFieldValue">Field Value:</label>
+        <input type="text" id="customFieldValue">
+    </div>
+    <div class="form-actions">
+        <button id="saveCustomFieldBtn">Save</button>
+        <button type="button" id="closeCustomFieldModalBtn">Cancel</button>
+    </div>
+</div>
+
   <!-- Manage Talks Section -->
   <div class="form-group">
     <h3>Manage Talks</h3>
