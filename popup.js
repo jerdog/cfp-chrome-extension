@@ -81,35 +81,39 @@ async function loadTalkSelector() {
     });
 }
 
-async function displaySelectedTalk() {
-    const selector = document.getElementById('talkSelector');
-    const selectedTitle = selector.value;
-    const detailsContainer = document.getElementById('talkDetails');
-
-    // Clear details container
-    detailsContainer.innerHTML = '';
-
-    // Display custom fields regardless of selected talk
+async function displayCustomFields(detailsContainer) {
     const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
     customFields.forEach(field => {
         detailsContainer.innerHTML += `
             <div class="field-container">
-                <span class="field-label">${field.name}: </span> <span class="field-content">${field.value}</span>
+                <span class="field-label">${field.name}: </span>
+                <span class="field-content">${field.value}</span>
                 <button class="copy-btn" data-value="${field.value}">Copy</button>
                 <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
             </div>
         `;
     });
+}
 
-    // If no talk is selected, stop here
-    if (!selectedTitle) return;
+async function displaySelectedTalk() {
+    const selector = document.getElementById('talkSelector');
+    const selectedTitle = selector.value;
+    const detailsContainer = document.getElementById('talkDetails');
+
+    // Clear the details container
+    detailsContainer.innerHTML = '';
+
+    // Always display custom fields
+    await displayCustomFields(detailsContainer);
+
+    if (!selectedTitle) return; // Stop if no talk is selected
 
     const { talks = [] } = await chrome.storage.local.get(['talks']);
     const talk = talks.find(t => t.title === selectedTitle);
 
     if (!talk) return;
 
-    // Add talk-specific fields
+    // Display talk-specific fields
     const orderedFields = ['title', 'description', 'duration', 'level'];
     orderedFields.forEach(field => {
         detailsContainer.innerHTML += `
@@ -122,7 +126,7 @@ async function displaySelectedTalk() {
         `;
     });
 
-    // Add event listeners to the copy buttons
+    // Add event listeners for copy buttons
     detailsContainer.querySelectorAll('.copy-btn').forEach(button => {
         button.addEventListener('click', () => {
             const valueToCopy = button.getAttribute('data-value');

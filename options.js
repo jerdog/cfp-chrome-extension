@@ -148,9 +148,14 @@ class OptionsPage {
         const container = document.getElementById('customFieldsContainer');
         container.innerHTML = customFields.map((field, index) => `
             <div class="custom-field-item">
-                <div><strong>${field.name}:</strong> ${field.value}</div>
-                <button class="edit-custom-field-btn" data-index="${index}">Edit</button>
-                <button class="delete-custom-field-btn" data-index="${index}">Delete</button>
+                <div class="custom-field-details">
+                    <strong>${field.name}:</strong>
+                </div>
+                <div> ${field.value} </div>
+                <div>
+                    <button class="edit-custom-field-btn" data-index="${index}">Edit</button>
+                    <button class="delete-custom-field-btn" data-index="${index}">Delete</button>
+                </div>
             </div>
         `).join('');
     }
@@ -193,7 +198,7 @@ class OptionsPage {
 
         container.innerHTML = this.state.talks.map((talk, index) => `
             <div class="talk-item">
-                <div>
+                <div class="talk-details">
                     <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
                 </div>
                 <div>

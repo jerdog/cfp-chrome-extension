@@ -4,11 +4,21 @@
   <title>CFP Manager Settings</title>
   <style>
     body { padding: 20px; max-width: 800px; margin: 0 auto; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; }
-    input[type="text"], textarea, input[type="file"] { width: 100%; padding: 5px; }
+    label { display: block; margin-bottom: 10px; font-weight: bold; }
     button { padding: 8px 15px; }
     a { color: #007bff; text-decoration: none; }
+    input[type="text"], textarea, input[type="file"] {
+      width: 50%;
+      padding: 5px;
+      margin-left: 5px;
+      border-width: 1px;
+      border: 1px solid #ddd;
+    }
+
+    .container { margin: 10 10 10 10; }
+    .form-section { margin: 1.5rem 0; }
+    .form-group { margin: 1.5rem 0; border: 1px solid #ddd; }
+    .error { color: red; margin-top: 5px; font-size: 0.9em; }
     .modal {
       display: none;
       position: fixed;
@@ -34,22 +44,31 @@
       background: rgba(0,0,0,0.5);
       z-index: 999;
     }
-    .error {
-      color: red;
-      margin-top: 5px;
-      font-size: 0.9em;
-    }
     .talk-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-      padding: 8px;
+      padding: 5px;
       border: 1px solid #ddd;
       border-radius: 4px;
     }
-    .talk-item button {
-      margin-left: 10px;
+    .talk-details {
+      display: flex;
+      max-width: 80%;
+      margin-right: 10px;
+    }
+    .custom-field-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .custom-field-details {
+      display: flex;
+      max-width: 80%;
+      margin-right: 10px;
     }
   </style>
 </head>
@@ -59,27 +78,26 @@
   <p>View on <a href="https://github.com/jerdog/cfp-chrome-extension" target="_blank">GitHub</a></p>
   <h2>Settings</h2>
 
-  <!-- Sessionize URL Section -->
-  <div class="form-group">
-    <label for="sessionizeUrl">Sessionize API URL:</label>
-    <input type="text" id="sessionizeUrl">
-    <button id="saveSessionizeBtn">Save</button>
-  </div>
-
   <!-- Import/Export Talks Section -->
   <div class="form-group">
     <h3>Import/Export Talks</h3>
+    <!-- Sessionize URL Section -->
+    <div class="form-section">
+      <label for="sessionizeUrl">Sessionize API URL:</label>
+      <input type="text" id="sessionizeUrl">
+      <button id="saveSessionizeBtn">Save</button>
+    </div>
+    <!-- Import/Export CSV Section -->
     <label for="importCsv">Import Talks (CSV):</label>
+    <p><a id="downloadTemplate" href="#">Download CSV Template</a></p>
     <input type="file" id="importCsv" accept=".csv">
     <button id="uploadCsvBtn">Upload</button>
-    <br>
-    <a id="downloadTemplate" href="#">Download CSV Template</a>
   </div>
 
   <!-- Manage Custom Fields Section -->
   <div class="form-group">
       <h3>Manage Custom Fields</h3>
-      <div id="customFieldsContainer"></div>
+      <div id="customFieldsContainer" class="container"></div>
       <button id="addCustomFieldBtn">Add Custom Field</button>
   </div>
 
@@ -105,7 +123,7 @@
     <h3>Manage Talks</h3>
     <button id="addTalkBtn">Add Talk</button>
     <button id="deleteAllBtn">Delete All Talks</button>
-    <div id="talksContainer" style="padding-top: 10px;"></div>
+    <div id="talksContainer" class="container"></div>
   </div>
 
   <!-- Add/Edit Talk Modal -->
