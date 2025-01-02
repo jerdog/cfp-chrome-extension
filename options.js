@@ -107,12 +107,32 @@ class OptionsPage {
         this.handleAddTalk = this.handleAddTalk.bind(this);
         this.handleSaveTalk = this.handleSaveTalk.bind(this);
         this.handleDeleteAll = this.handleDeleteAll.bind(this);
+        this.loadSessionizeUrl = this.loadSessionizeUrl.bind(this);
+        this.saveSessionizeUrl = this.saveSessionizeUrl.bind(this);
     }
 
     async loadTalks() {
         const { talks = [] } = await chrome.storage.local.get(['talks']);
         this.state.talks = talks;
         this.renderTalks();
+    }
+
+    async loadSessionizeUrl() {
+        const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
+        const input = document.getElementById('sessionizeUrl');
+        if (sessionizeUrl) {
+            input.value = sessionizeUrl;
+        }
+    }
+
+    async saveSessionizeUrl() {
+        const sessionizeUrl = document.getElementById('sessionizeUrl').value;
+        if (!sessionizeUrl) {
+            alert('Sessionize URL cannot be empty.');
+            return;
+        }
+        await chrome.storage.sync.set({ sessionizeUrl });
+        alert('Sessionize URL saved successfully!');
     }
 
     renderTalks() {
@@ -214,11 +234,13 @@ class OptionsPage {
 
     async init() {
         await this.loadTalks();
+        await this.loadSessionizeUrl();
 
         document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
         document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk.bind(this));
         document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll.bind(this));
         document.getElementById('closeModal').addEventListener('click', this.closeModal.bind(this));
+        document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
     }
 }
 
