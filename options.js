@@ -143,6 +143,50 @@ class OptionsPage {
         alert('Sessionize URL saved successfully!');
     }
 
+    async loadCustomFields() {
+        const customFields = await CustomFieldsManager.getCustomFields();
+        const container = document.getElementById('customFieldsContainer');
+        container.innerHTML = customFields.map((field, index) => `
+            <div class="custom-field-item">
+                <div><strong>${field.name}:</strong> ${field.value}</div>
+                <button class="edit-custom-field-btn" data-index="${index}">Edit</button>
+                <button class="delete-custom-field-btn" data-index="${index}">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    async saveCustomField() {
+        const name = document.getElementById('customFieldName').value.trim();
+        const value = document.getElementById('customFieldValue').value.trim();
+
+        if (!name) {
+            alert('Field name is required.');
+            return;
+        }
+
+        const index = document.getElementById('saveCustomFieldBtn').dataset.index;
+        if (index !== undefined) {
+            const customFields = await CustomFieldsManager.getCustomFields();
+            customFields[index] = { name, value };
+            await chrome.storage.sync.set({ customFields });
+        } else {
+            await CustomFieldsManager.saveCustomField({ name, value });
+        }
+
+        await this.loadCustomFields();
+        this.closeCustomFieldModal();
+    }
+
+    openCustomFieldModal() {
+        document.getElementById('addCustomFieldModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    closeCustomFieldModal() {
+        document.getElementById('addCustomFieldModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+    }
+
     renderTalks() {
         const container = document.getElementById('talksContainer');
         if (!container) return;
@@ -195,8 +239,6 @@ class OptionsPage {
         reader.readAsText(file);
     }
 
-
-
     handleDownloadTemplate() {
         const csvContent = 'Title,Description,Duration,Level\n';
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -213,11 +255,15 @@ class OptionsPage {
     async init() {
         await this.loadTalks();
         await this.loadSessionizeUrl();
+        await this.loadCustomFields();
 
         // Other event listeners
         document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
         document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
         document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
+        document.getElementById('addCustomFieldBtn').addEventListener('click', this.openCustomFieldModal.bind(this));
+        document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
+        document.getElementById('closeCustomFieldModalBtn').addEventListener('click', this.closeCustomFieldModal.bind(this));
 
         // CSV Import/Upload Event Listener
         document.getElementById('uploadCsvBtn').addEventListener('click', () => {

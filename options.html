@@ -54,6 +54,9 @@
   </style>
 </head>
 <body>
+  <h1>CFP Manager</h1>
+  <p>Manage your CFP (Call for Papers) submissions for easy copy and paste.</p>
+  <p>View on <a href="https://github.com/jerdog/cfp-chrome-extension" target="_blank">GitHub</a></p>
   <h2>Settings</h2>
 
   <!-- Sessionize URL Section -->
@@ -73,14 +76,15 @@
     <a id="downloadTemplate" href="#">Download CSV Template</a>
   </div>
 
+  <!-- Manage Custom Fields Section -->
   <div class="form-group">
-    <h3>Manage Custom Fields</h3>
-    <div id="customFieldsContainer"></div>
-    <button id="addCustomFieldBtn">Add Custom Field</button>
-</div>
+      <h3>Manage Custom Fields</h3>
+      <div id="customFieldsContainer"></div>
+      <button id="addCustomFieldBtn">Add Custom Field</button>
+  </div>
 
-<!-- Add/Edit Custom Field Modal -->
-<div class="modal" id="addCustomFieldModal">
+  <!-- Add/Edit Custom Field Modal -->
+  <div class="modal" id="addCustomFieldModal">
     <h3 id="customFieldModalTitle">Add/Edit Custom Field</h3>
     <div class="form-group">
         <label for="customFieldName">Field Name:</label>
@@ -94,7 +98,7 @@
         <button id="saveCustomFieldBtn">Save</button>
         <button type="button" id="closeCustomFieldModalBtn">Cancel</button>
     </div>
-</div>
+  </div>
 
   <!-- Manage Talks Section -->
   <div class="form-group">
