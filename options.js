@@ -117,6 +117,11 @@ class OptionsPage {
         this.handleDownloadTemplate = this.handleDownloadTemplate.bind(this);
         this.loadSessionizeUrl = this.loadSessionizeUrl.bind(this);
         this.saveSessionizeUrl = this.saveSessionizeUrl.bind(this);
+        this.openTalkModal = this.openTalkModal.bind(this);
+        this.closeTalkModal = this.closeTalkModal.bind(this);
+        this.handleAddTalk = this.handleAddTalk.bind(this);
+        this.handleSaveTalk = this.handleSaveTalk.bind(this);
+        this.handleDeleteAll = this.handleDeleteAll.bind(this);
     }
 
     async loadTalks() {
@@ -222,16 +227,6 @@ class OptionsPage {
         this.closeCustomFieldModal();
     }
 
-    openCustomFieldModal() {
-        document.getElementById('addCustomFieldModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    closeCustomFieldModal() {
-        document.getElementById('addCustomFieldModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-    }
-
     renderTalks() {
         const container = document.getElementById('talksContainer');
         if (!container) return;
@@ -239,7 +234,7 @@ class OptionsPage {
         container.innerHTML = this.state.talks.map((talk, index) => `
             <div class="talk-item">
                 <div class="talk-details">
-                    <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
+                    <strong>${talk.title}</strong>&nbsp;(${talk.duration} mins, ${talk.level})
                 </div>
                 <div>
                     <button class="edit-btn" data-index="${index}">Edit</button>
@@ -247,6 +242,79 @@ class OptionsPage {
                 </div>
             </div>
         `).join('');
+
+        // Add event listeners for edit and delete
+        container.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const index = parseInt(button.dataset.index, 10);
+                const talk = this.state.talks[index];
+                document.getElementById('talkTitle').value = talk.title;
+                document.getElementById('talkDescription').value = talk.description;
+                document.getElementById('talkDuration').value = talk.duration;
+                document.getElementById('talkLevel').value = talk.level;
+                document.getElementById('saveTalkBtn').dataset.index = index;
+                this.openTalkModal();
+            });
+        });
+
+        container.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const index = parseInt(button.dataset.index, 10);
+                this.state.talks.splice(index, 1);
+                await chrome.storage.local.set({ talks: this.state.talks });
+                this.renderTalks();
+            });
+        });
+    }
+
+    handleAddTalk() {
+        document.getElementById('talkTitle').value = '';
+        document.getElementById('talkDescription').value = '';
+        document.getElementById('talkDuration').value = '';
+        document.getElementById('talkLevel').value = 'Beginner';
+        delete document.getElementById('saveTalkBtn').dataset.index;
+        this.openTalkModal();
+    }
+
+    async handleSaveTalk() {
+        const title = document.getElementById('talkTitle').value.trim();
+        const description = document.getElementById('talkDescription').value.trim();
+        const duration = parseInt(document.getElementById('talkDuration').value.trim(), 10);
+        const level = document.getElementById('talkLevel').value;
+
+        if (!title) {
+            alert('Title is required.');
+            return;
+        }
+
+        const index = document.getElementById('saveTalkBtn').dataset.index;
+        if (index !== undefined) {
+            this.state.talks[index] = { title, description, duration, level };
+        } else {
+            this.state.talks.push({ title, description, duration, level });
+        }
+
+        await chrome.storage.local.set({ talks: this.state.talks });
+        this.renderTalks();
+        this.closeTalkModal();
+    }
+
+    async handleDeleteAll() {
+        if (confirm('Are you sure you want to delete all talks?')) {
+            this.state.talks = [];
+            await chrome.storage.local.set({ talks: [] });
+            this.renderTalks();
+        }
+    }
+
+    openTalkModal() {
+        document.getElementById('addEditModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    closeTalkModal() {
+        document.getElementById('addEditModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
     }
 
     handleImportCsv(event) {
@@ -297,6 +365,16 @@ class OptionsPage {
         document.body.removeChild(link);
     }
 
+    openCustomFieldModal() {
+        document.getElementById('addCustomFieldModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    closeCustomFieldModal() {
+        document.getElementById('addCustomFieldModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+    }
+
     async init() {
         await this.loadTalks();
         await this.loadSessionizeUrl();
@@ -305,6 +383,7 @@ class OptionsPage {
         // Other event listeners
         document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
         document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
+        document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk);
         document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
         document.getElementById('addCustomFieldBtn').addEventListener('click', this.openCustomFieldModal.bind(this));
         document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
