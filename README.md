@@ -18,6 +18,7 @@ The CFP Chrome Extension is a Chrome extension designed to streamline the proces
 ### Options Page
 - **Add Talks**: Use the **Add Talk** button to manually add a talk.
 - **Import Talks**: Upload a CSV file with talk details using the **Import Talks** section.
+  - Import your talks via Sessionize API <a href="https://sessionize.com/app/speaker/embed" target="_blank">here</a>.
 - **Export Template**: Click the **Download CSV Template** link for a preformatted file.
 
 ### Popup Page

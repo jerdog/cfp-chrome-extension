@@ -1,90 +1,13 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    await loadTalkSelector();
-
-    document.getElementById('fetchSessionize').addEventListener('click', async () => {
-        const fetchButton = document.getElementById('fetchSessionize');
-        let statusMessage = document.getElementById('fetchStatus');
-
-        if (!statusMessage) {
-            statusMessage = document.createElement('span');
-            statusMessage.id = 'fetchStatus';
-            statusMessage.style.marginLeft = '10px';
-            statusMessage.style.fontSize = '0.9em';
-            fetchButton.insertAdjacentElement('afterend', statusMessage);
-        }
-
-        try {
-            const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
-            if (!sessionizeUrl) {
-                statusMessage.textContent = 'Please set your Sessionize API URL in the settings';
-                statusMessage.style.color = 'red';
-                return;
-            }
-
-            const response = await fetch(sessionizeUrl);
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            const rawData = await response.json();
-
-            const talks = Array.isArray(rawData) ? rawData : rawData.sessions || [];
-            const formattedTalks = talks.map(talk => ({
-                title: talk.title || 'Untitled',
-                description: talk.description || 'No description provided.',
-                duration: parseInt(talk.duration || '0'),
-                level: talk.level || 'Beginner',
-            }));
-
-            await chrome.storage.local.set({ talks: formattedTalks });
-            await loadTalkSelector();
-
-            statusMessage.textContent = `Successfully loaded ${formattedTalks.length} talks`;
-            statusMessage.style.color = 'green';
-        } catch (error) {
-            console.error('Error fetching from Sessionize:', error);
-            statusMessage.textContent = 'Failed to fetch talks. Check the URL.';
-            statusMessage.style.color = 'red';
-        }
-
-        setTimeout(() => {
-            statusMessage.textContent = '';
-        }, 3000);
-    });
-
-    document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
-
-    // Link to options page
-    document.getElementById('optionsLink').addEventListener('click', () => {
-        chrome.runtime.openOptionsPage();
-    });
-
-});
-
-async function saveSelectedTalk(talkTitle) {
-    await chrome.storage.local.set({ selectedTalk: talkTitle });
-}
-
-async function loadSelectedTalk() {
-    const { selectedTalk } = await chrome.storage.local.get(['selectedTalk']);
-    return selectedTalk;
-}
-
-async function loadTalkSelector() {
-    const { talks = [] } = await chrome.storage.local.get(['talks']);
-
-    const selector = document.getElementById('talkSelector');
-    selector.innerHTML = '<option value="">Select a talk...</option>';
-
-    talks.sort((a, b) => a.title.localeCompare(b.title)).forEach(talk => {
-        const option = document.createElement('option');
-        option.value = talk.title;
-        option.textContent = talk.title;
-        selector.appendChild(option);
-    });
-}
-
-async function displayCustomFields(detailsContainer) {
+/**
+ * Utility function to display custom fields.
+ * @param {HTMLElement} container - The container where custom fields are displayed.
+ */
+async function displayCustomFields(container) {
     const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
+    container.innerHTML = '<h3>Custom Fields</h3>'; // Add header for custom fields
+
     customFields.forEach(field => {
-        detailsContainer.innerHTML += `
+        container.innerHTML += `
             <div class="field-container">
                 <span class="field-label">${field.name}: </span>
                 <span class="field-content">${field.value}</span>
@@ -93,33 +16,40 @@ async function displayCustomFields(detailsContainer) {
             </div>
         `;
     });
+
+    // Add event listeners for copy buttons
+    container.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const valueToCopy = button.getAttribute('data-value');
+            copyToClipboard(valueToCopy, button);
+        });
+    });
 }
 
+/**
+ * Displays the selected talk's details and custom fields.
+ */
 async function displaySelectedTalk() {
     const selector = document.getElementById('talkSelector');
     const selectedTitle = selector.value;
     const detailsContainer = document.getElementById('talkDetails');
 
-    // Clear the details container
-    detailsContainer.innerHTML = '';
+    // Clear talk details container
+    detailsContainer.innerHTML = '<h3>Talk Details</h3>';
 
-    // Always display custom fields
-    await displayCustomFields(detailsContainer);
-
-    if (!selectedTitle) return; // Stop if no talk is selected
+    if (!selectedTitle) return;
 
     const { talks = [] } = await chrome.storage.local.get(['talks']);
     const talk = talks.find(t => t.title === selectedTitle);
 
     if (!talk) return;
 
-    // Display talk-specific fields
     const orderedFields = ['title', 'description', 'duration', 'level'];
     orderedFields.forEach(field => {
         detailsContainer.innerHTML += `
             <div class="field-container">
-                <div class="field-label">${field.charAt(0).toUpperCase() + field.slice(1)}:</div>
-                <div class="field-content">${talk[field]}</div>
+                <span class="field-label">${field.charAt(0).toUpperCase() + field.slice(1)}: </span>
+                <span class="field-content">${talk[field]}</span>
                 <button class="copy-btn" data-value="${talk[field]}">Copy</button>
                 <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
             </div>
@@ -135,6 +65,36 @@ async function displaySelectedTalk() {
     });
 }
 
+/**
+ * Loads the saved selected talk from storage.
+ * @returns {Promise<string|null>} - The title of the selected talk.
+ */
+async function loadSelectedTalk() {
+    const { selectedTalk } = await chrome.storage.local.get(['selectedTalk']);
+    return selectedTalk || null;
+}
+
+/**
+ * Loads the talk selector dropdown with available talks.
+ */
+async function loadTalkSelector() {
+    const { talks = [] } = await chrome.storage.local.get(['talks']);
+    const selector = document.getElementById('talkSelector');
+    selector.innerHTML = '<option value="">Select a talk...</option>';
+
+    talks.forEach(talk => {
+        const option = document.createElement('option');
+        option.value = talk.title;
+        option.textContent = talk.title;
+        selector.appendChild(option);
+    });
+}
+
+/**
+ * Copies text to clipboard and displays a status message.
+ * @param {string} text - The text to copy.
+ * @param {HTMLElement} button - The button that triggered the copy action.
+ */
 function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
         const status = button.nextElementSibling;
@@ -144,79 +104,42 @@ function copyToClipboard(text, button) {
         }, 2000);
     }).catch(err => {
         console.error('Error copying to clipboard:', err);
-        const status = button.nextElementSibling;
-        status.textContent = 'Failed to copy';
-        status.style.color = 'red';
-        status.style.display = 'inline';
-        setTimeout(() => {
-            status.style.display = 'none';
-            status.textContent = 'Copied!';
-            status.style.color = 'green';
-        }, 2000);
     });
 }
 
-function handleImportCsv(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const content = e.target.result;
-        const rows = content.split('\n').map(row => row.split(','));
-
-        const talks = rows.slice(1).map(row => ({
-            title: row[0].trim(),
-            description: row[1].trim(),
-            duration: parseInt(row[2].trim()),
-            level: row[3].trim(),
-        })).filter(talk => talk.title);
-
-        const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
-        const updatedTalks = [...existingTalks, ...talks];
-
-        await chrome.storage.local.set({ talks: updatedTalks });
-        await loadTalkSelector();
-
-        alert('Talks imported successfully!');
-    };
-
-    reader.readAsText(file);
-}
-
-function handleDownloadTemplate() {
-    const csvContent = 'Title,Description,Duration,Level\n';
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'talks_template.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// Load persisted talk on popup open
+// Main initialization
 document.addEventListener('DOMContentLoaded', async () => {
+    const customFieldsContainer = document.getElementById('customFields');
+    const detailsContainer = document.getElementById('talkDetails');
+
+    // Always display custom fields
+    await displayCustomFields(customFieldsContainer);
+
+    // Load talks into the selector
+    await loadTalkSelector();
+
+    // Load persisted selected talk if available
     const selectedTalk = await loadSelectedTalk();
     if (selectedTalk) {
         const selector = document.getElementById('talkSelector');
         selector.value = selectedTalk;
-        displaySelectedTalk();
+        await displaySelectedTalk();
     }
-});
 
-document.getElementById('resetView').addEventListener('click', async () => {
-    // Clear filters
-    document.getElementById('levelFilter').value = '';
-    document.getElementById('durationFilter').value = '';
+    // Add event listeners
+    document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
 
-    // Clear selected talk
-    const selector = document.getElementById('talkSelector');
-    selector.value = '';
-    await chrome.storage.local.remove(['selectedTalk']);
+    document.getElementById('resetView').addEventListener('click', async () => {
+        document.getElementById('levelFilter').value = '';
+        document.getElementById('durationFilter').value = '';
+        const selector = document.getElementById('talkSelector');
+        selector.value = '';
+        await chrome.storage.local.remove(['selectedTalk']);
+        detailsContainer.innerHTML = '<h3>Talk Details</h3>';
+        await displayCustomFields(customFieldsContainer); // Reload custom fields
+    });
 
-    // Refresh the details view
-    displaySelectedTalk();
+    document.getElementById('optionsLink').addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
 });
