@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CFP Manager Settings</title>
+  <style>
+    body { padding: 20px; max-width: 800px; margin: 0 auto; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input[type="text"], textarea { width: 100%; padding: 5px; }
+    button { padding: 8px 15px; }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-width: 500px;
+      width: 90%;
+      border-radius: 8px;
+    }
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    .error {
+      color: red;
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+    .custom-fields {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 4px;
+    }
+    .custom-field {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .custom-field button {
+      padding: 2px 8px;
+    }
+    .talk-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .talk-table th, .talk-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .talk-table th {
+      background-color: #f5f5f5;
+    }
+    .bulk-actions {
+      margin: 15px 0;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .custom-field {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px;
+        margin: 4px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .delete-field-btn {
+        background: #ff4444;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    #modalBackdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+
+    .form-actions {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <h2>Settings</h2>
+  <div id="errorContainer" class="error"></div>
+
+  <div class="form-group">
+    <label for="sessionizeUrl">Sessionize API URL:</label>
+    <input type="text" id="sessionizeUrl">
+  </div>
+
+  <div class="form-group">
+    <h3>Import Talks</h3>
+    <input type="file" id="csvFile" accept=".csv">
+    <button id="importCsv">Import CSV</button>
+  </div>
+
+  <div class="custom-fields">
+    <h3>Custom Fields</h3>
+    <div id="customFieldsList"></div>
+    <button id="addCustomField">Add Custom Field</button>
+  </div>
+
+  <div class="form-group">
+    <h3>Manage Talks</h3>
+    <div id="talksContainer"></div>
+  </div>
+
+  <button id="save">Save Settings</button>
+  <button id="addTalk">Add Talk</button>
+
+  <!-- Add Custom Field Modal -->
+  <div class="modal" id="addFieldModal">
+    <form id="addFieldForm">
+        <h3>Add Custom Field</h3>
+        <div class="form-group">
+            <label for="fieldName">Field Name:</label>
+            <input type="text" id="fieldName" required>
+        </div>
+        <div class="form-group">
+            <label for="fieldDefaultValue">Default Value:</label>
+            <input type="text" id="fieldDefaultValue">
+        </div>
+        <div class="form-actions">
+            <button type="submit">Add Field</button>
+            <button type="button" id="closeModal">Cancel</button>
+        </div>
+    </form>
+  </div>
+  <div id="modalBackdrop"></div>
+
+  <script src="options.js" defer></script>
+</body>
+</html>

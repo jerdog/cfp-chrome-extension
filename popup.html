@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CFP Manager</title>
+  <style>
+    body {
+      width: 400px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    .talk-selector {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .filters {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+    }
+    .talk-details {
+      margin-top: 15px;
+    }
+    .field-container {
+      margin-bottom: 10px;
+      padding: 8px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    .field-container:hover {
+      background-color: #f5f5f5;
+    }
+    .field-label {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .field-content {
+      word-wrap: break-word;
+      margin-bottom: 4px;
+    }
+    .copy-btn {
+      padding: 4px 8px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: #e0e0e0;
+    }
+    .actions {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    .custom-field-input {
+        width: 100%;
+        padding: 4px;
+        margin: 4px 0;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <select id="talkSelector" class="talk-selector">
+    <option value="">Select a talk...</option>
+  </select>
+  <div class="filters">
+    <select id="levelFilter">
+      <option value="">All Levels</option>
+      <option value="Beginner">Beginner</option>
+      <option value="Intermediate">Intermediate</option>
+      <option value="Advanced">Advanced</option>
+    </select>
+    <select id="durationFilter">
+      <option value="">All Durations</option>
+      <option value="30">30 mins</option>
+      <option value="45">45 mins</option>
+      <option value="60">60 mins</option>
+    </select>
+  </div>
+  <div id="talkDetails" class="talk-details"></div>
+  <div class="actions">
+    <button id="fetchSessionize">Fetch from Sessionize</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
