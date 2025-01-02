@@ -106,6 +106,51 @@ class CustomFieldsManager {
   }
 }
 
+function parseCsv(csvContent) {
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < csvContent.length; i++) {
+        const char = csvContent[i];
+        const nextChar = csvContent[i + 1];
+
+        if (char === '"' && inQuotes && nextChar === '"') {
+            // Escaped quote
+            currentField += '"';
+            i++; // Skip the next quote
+        } else if (char === '"' && !inQuotes) {
+            // Start of a quoted field
+            inQuotes = true;
+        } else if (char === '"' && inQuotes) {
+            // End of a quoted field
+            inQuotes = false;
+        } else if (char === ',' && !inQuotes) {
+            // End of a field
+            currentRow.push(currentField);
+            currentField = '';
+        } else if (char === '\n' && !inQuotes) {
+            // End of a row
+            currentRow.push(currentField);
+            rows.push(currentRow);
+            currentRow = [];
+            currentField = '';
+        } else {
+            // Regular character
+            currentField += char;
+        }
+    }
+
+    // Push the last row if not already added
+    if (currentField || currentRow.length > 0) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+    }
+
+    return rows;
+}
+
 class OptionsPage {
     constructor() {
         this.state = { talks: [] };
@@ -242,31 +287,32 @@ class OptionsPage {
 }
 
     async saveSessionizeUrl() {
-        const sessionizeUrl = document.getElementById('sessionizeUrl').value;
-        const statusMessage = document.createElement('span');
-        const button = document.getElementById('saveSessionizeBtn');
-        let existingMessage = button.nextSibling;
+        const saveStatusElement = document.getElementById('saveSessionizeUrlStatus');
+        saveStatusElement.textContent = '';
+        saveStatusElement.style.color = '';
 
-        // Clear existing status message
-        if (existingMessage && existingMessage.nodeName === 'SPAN') {
-            button.parentNode.removeChild(existingMessage);
+        const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
+        if (!sessionizeUrl) {
+            saveStatusElement.textContent = 'Please set your Sessionize API URL.';
+            saveStatusElement.style.color = 'red';
+            return;
         }
 
+        const button = document.getElementById('saveSessionizeBtn');
+
         if (!sessionizeUrl) {
-            statusMessage.textContent = 'Sessionize URL cannot be empty.';
-            statusMessage.style.color = 'red';
-            button.parentNode.insertBefore(statusMessage, button.nextSibling);
+            saveStatusElement.textContent = 'Sessionize URL cannot be empty.';
+            saveStatusElement.style.color = 'red';
             return;
         }
 
         await chrome.storage.sync.set({ sessionizeUrl });
-        statusMessage.textContent = 'Sessionize URL saved successfully!';
-        statusMessage.style.color = 'green';
-        button.parentNode.insertBefore(statusMessage, button.nextSibling);
+        saveStatusElement.textContent = 'Sessionize URL saved successfully!';
+        saveStatusElement.style.color = 'green';
 
         setTimeout(() => {
-            if (statusMessage) {
-                statusMessage.remove();
+            if (saveStatusElement) {
+                saveStatusElement.remove();
             }
         }, 3000);
     }
@@ -338,13 +384,23 @@ class OptionsPage {
             return;
         }
 
-        const csvContent = talks.map(talk =>
-            `"${talk.title}","${talk.description}","${talk.duration}","${talk.level}"`
-        ).join('\n');
-
+        // Ensure CSV header
         const csvHeader = `"Title","Description","Duration","Level"`;
+
+        // Map talks into CSV rows
+        const csvContent = talks.map(talk => {
+            const title = talk.title || 'Untitled';
+            const description = talk.description || 'No description provided.';
+            const duration = talk.duration !== undefined ? talk.duration : 'Unknown';
+            const level = talk.level || 'Beginner';
+
+            // Escape quotes and enclose fields in double quotes
+            return `"${title.replace(/"/g, '""')}","${description.replace(/"/g, '""')}","${duration}","${level}"`;
+        }).join('\n');
+
         const csv = `${csvHeader}\n${csvContent}`;
 
+        // Create and download the CSV file
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
 
@@ -455,28 +511,41 @@ class OptionsPage {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target.result;
-            const rows = content.split('\n').map(row => row.split(','));
 
-            const talks = rows.slice(1).map(row => ({
-                title: row[0]?.trim() || '',
-                description: row[1]?.trim() || '',
-                duration: parseInt(row[2]?.trim() || '0', 10),
-                level: row[3]?.trim() || 'Beginner',
-            })).filter(talk => talk.title); // Filter out rows with empty titles
+            // Parse CSV content
+            const rows = parseCsv(content);
 
-            if (talks.length === 0) {
-                alert('No valid talks found in the uploaded CSV file.');
+            // Validate header
+            const [headers, ...dataRows] = rows;
+            if (!headers || headers.length < 4 || headers[0] !== 'Title' || headers[1] !== 'Description' || headers[2] !== 'Duration' || headers[3] !== 'Level') {
+                alert('Invalid CSV format. Ensure headers are: "Title, Description, Duration, Level".');
                 document.getElementById('importCsv').value = ''; // Reset file input
                 return;
             }
 
+            // Map rows to talk objects
+            const newTalks = dataRows.map(row => ({
+                title: row[0] || 'Untitled',
+                description: row[1] || 'No description provided.',
+                duration: row[2] || 'Unknown',
+                level: row[3] || 'Beginner',
+            })).filter(talk => talk.title); // Exclude rows with empty titles
+
+            // Check for duplicates
             const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
-            const updatedTalks = [...existingTalks, ...talks];
+            const uniqueTalks = newTalks.filter(newTalk =>
+                !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
+            );
 
-            await chrome.storage.local.set({ talks: updatedTalks });
-            this.loadTalks();
+            if (uniqueTalks.length > 0) {
+                const updatedTalks = [...existingTalks, ...uniqueTalks];
+                await chrome.storage.local.set({ talks: updatedTalks });
+                this.loadTalks();
+                alert(`${uniqueTalks.length} new talks imported successfully. ${newTalks.length - uniqueTalks.length} duplicates skipped.`);
+            } else {
+                alert('All talks in the CSV already exist. No new talks were added.');
+            }
 
-            alert('Talks imported successfully!');
             document.getElementById('importCsv').value = ''; // Reset file input
         };
 
