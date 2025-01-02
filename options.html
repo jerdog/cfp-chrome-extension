@@ -78,6 +78,14 @@
   <p>View on <a href="https://github.com/jerdog/cfp-chrome-extension" target="_blank">GitHub</a></p>
   <h2>Settings</h2>
 
+  <!-- General Settings Management -->
+  <div class="form-group">
+    <h3>Settings Management</h3>
+    <button id="exportSettingsBtn">Export Settings (JSON)</button>
+    <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
+    <button id="importSettingsBtn">Import Settings (JSON)</button>
+  </div>
+
   <!-- Import/Export Talks Section -->
   <div class="form-group">
     <h3>Import/Export Talks</h3>
@@ -90,10 +98,12 @@
       <span id="fetchSessionizeStatus" style="margin-left: 10px; font-size: 0.9em;"></span>
     </div>
     <!-- Import/Export CSV Section -->
-    <label for="importCsv">Import Talks (CSV):</label>
-    <p><a id="downloadTemplate" href="#">Download CSV Template</a></p>
-    <input type="file" id="importCsv" accept=".csv">
-    <button id="uploadCsvBtn">Upload</button>
+    <div>
+      <input type="file" id="importCsv" accept=".csv">
+      <button id="uploadCsvBtn">Import Talks (CSV)</button>
+      <p><a id="downloadTemplate" href="#">Download CSV Template</a></p>
+      <button id="exportTalksBtn">Export Talks (CSV)</button>
+    </div>
   </div>
 
   <!-- Manage Custom Fields Section -->

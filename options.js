@@ -125,6 +125,53 @@ class OptionsPage {
         this.handleDeleteAll = this.handleDeleteAll.bind(this);
     }
 
+    async exportSettings() {
+        const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
+        const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
+        const { talks = [] } = await chrome.storage.local.get(['talks']);
+
+        const settings = { sessionizeUrl, customFields, talks };
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'settings.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async importSettings(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const settings = JSON.parse(e.target.result);
+
+                if (settings.sessionizeUrl) {
+                    await chrome.storage.sync.set({ sessionizeUrl: settings.sessionizeUrl });
+                }
+                if (Array.isArray(settings.customFields)) {
+                    await chrome.storage.sync.set({ customFields: settings.customFields });
+                }
+                if (Array.isArray(settings.talks)) {
+                    await chrome.storage.local.set({ talks: settings.talks });
+                }
+
+                alert('Settings imported successfully.');
+                this.loadTalks();
+                this.loadCustomFields();
+            } catch (error) {
+                alert('Failed to import settings. Please ensure the file is valid JSON.');
+                console.error('Error importing settings:', error);
+            }
+        };
+
+        reader.readAsText(file);
+    }
+
     async loadTalks() {
         const { talks = [] } = await chrome.storage.local.get(['talks']);
         this.state.talks = talks;
@@ -140,53 +187,53 @@ class OptionsPage {
     }
 
     async fetchSessionizeTalks() {
-    const statusElement = document.getElementById('fetchSessionizeStatus');
-    statusElement.textContent = '';
-    statusElement.style.color = '';
+        const statusElement = document.getElementById('fetchSessionizeStatus');
+        statusElement.textContent = '';
+        statusElement.style.color = '';
 
-    const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
-    if (!sessionizeUrl) {
-        statusElement.textContent = 'Please set your Sessionize API URL.';
-        statusElement.style.color = 'red';
-        return;
+        const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
+        if (!sessionizeUrl) {
+            statusElement.textContent = 'Please set your Sessionize API URL.';
+            statusElement.style.color = 'red';
+            return;
     }
 
-    try {
-        const response = await fetch(sessionizeUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+        try {
+            const response = await fetch(sessionizeUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const rawData = await response.json();
+            const talks = Array.isArray(rawData) ? rawData : rawData.sessions || [];
+            const formattedTalks = talks.map(talk => ({
+                title: talk.title || 'Untitled',
+                description: talk.description || 'No description provided.',
+                duration: parseInt(talk.duration || '0', 10),
+                level: talk.level || 'Beginner',
+            }));
+
+            // Get existing talks from storage
+            const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+
+            // Filter out duplicate talks
+            const newTalks = formattedTalks.filter(newTalk =>
+                !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
+            );
+
+            if (newTalks.length > 0) {
+                this.state.talks = [...existingTalks, ...newTalks];
+                await chrome.storage.local.set({ talks: this.state.talks });
+                this.renderTalks();
+            }
+
+            statusElement.textContent = `Successfully added ${newTalks.length} new talks. ${formattedTalks.length - newTalks.length} duplicates skipped.`;
+            statusElement.style.color = 'green';
+        } catch (error) {
+            console.error('Error fetching from Sessionize:', error);
+            statusElement.textContent = 'Failed to fetch talks. Check the URL.';
+            statusElement.style.color = 'red';
         }
-
-        const rawData = await response.json();
-        const talks = Array.isArray(rawData) ? rawData : rawData.sessions || [];
-        const formattedTalks = talks.map(talk => ({
-            title: talk.title || 'Untitled',
-            description: talk.description || 'No description provided.',
-            duration: parseInt(talk.duration || '0', 10),
-            level: talk.level || 'Beginner',
-        }));
-
-        // Get existing talks from storage
-        const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
-
-        // Filter out duplicate talks
-        const newTalks = formattedTalks.filter(newTalk =>
-            !existingTalks.some(existingTalk => existingTalk.title === newTalk.title)
-        );
-
-        if (newTalks.length > 0) {
-            this.state.talks = [...existingTalks, ...newTalks];
-            await chrome.storage.local.set({ talks: this.state.talks });
-            this.renderTalks();
-        }
-
-        statusElement.textContent = `Successfully added ${newTalks.length} new talks. ${formattedTalks.length - newTalks.length} duplicates skipped.`;
-        statusElement.style.color = 'green';
-    } catch (error) {
-        console.error('Error fetching from Sessionize:', error);
-        statusElement.textContent = 'Failed to fetch talks. Check the URL.';
-        statusElement.style.color = 'red';
-    }
 
     // Clear the status message after 3 seconds
     setTimeout(() => {
@@ -281,6 +328,31 @@ class OptionsPage {
 
         await this.loadCustomFields();
         this.closeCustomFieldModal();
+    }
+
+    async exportTalksAsCsv() {
+        const { talks = [] } = await chrome.storage.local.get(['talks']);
+
+        if (!talks.length) {
+            alert('No talks available to export.');
+            return;
+        }
+
+        const csvContent = talks.map(talk =>
+            `"${talk.title}","${talk.description}","${talk.duration}","${talk.level}"`
+        ).join('\n');
+
+        const csvHeader = `"Title","Description","Duration","Level"`;
+        const csv = `${csvHeader}\n${csvContent}`;
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'talks.csv';
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     renderTalks() {
@@ -448,6 +520,12 @@ class OptionsPage {
         document.getElementById('addCustomFieldBtn').addEventListener('click', this.openCustomFieldModal.bind(this));
         document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
         document.getElementById('closeCustomFieldModalBtn').addEventListener('click', this.closeCustomFieldModal.bind(this));
+        document.getElementById('exportSettingsBtn').addEventListener('click', this.exportSettings);
+        document.getElementById('importSettingsBtn').addEventListener('click', () => {
+            document.getElementById('importSettingsInput').click();
+        });
+        document.getElementById('importSettingsInput').addEventListener('change', this.importSettings.bind(this));
+        document.getElementById('exportTalksBtn').addEventListener('click', this.exportTalksAsCsv);
 
         // CSV Import/Upload Event Listener
         document.getElementById('uploadCsvBtn').addEventListener('click', () => {
