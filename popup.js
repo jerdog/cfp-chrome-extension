@@ -58,6 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
+async function saveSelectedTalk(talkTitle) {
+    await chrome.storage.local.set({ selectedTalk: talkTitle });
+}
+
+async function loadSelectedTalk() {
+    const { selectedTalk } = await chrome.storage.local.get(['selectedTalk']);
+    return selectedTalk;
+}
+
 async function loadTalkSelector() {
     const { talks = [] } = await chrome.storage.local.get(['talks']);
 
@@ -82,6 +91,8 @@ async function displaySelectedTalk() {
         return;
     }
 
+    await saveSelectedTalk(selectedTitle);
+
     const { talks = [] } = await chrome.storage.local.get(['talks']);
     const talk = talks.find(t => t.title === selectedTitle);
 
@@ -97,6 +108,19 @@ async function displaySelectedTalk() {
         </div>
     `).join('');
 
+    // Add custom fields
+    const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
+    customFields.forEach(field => {
+        detailsContainer.innerHTML += `
+            <div class="field-container">
+                <div class="field-label">${field.name}:</div>
+                <div class="field-content">${field.value}</div>
+                <button class="copy-btn" data-value="${field.value}">Copy</button>
+                <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
+            </div>
+        `;
+    });
+
     // Add event listeners to the copy buttons
     detailsContainer.querySelectorAll('.copy-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -105,6 +129,16 @@ async function displaySelectedTalk() {
         });
     });
 }
+
+// Load persisted talk on popup open
+document.addEventListener('DOMContentLoaded', async () => {
+    const selectedTalk = await loadSelectedTalk();
+    if (selectedTalk) {
+        const selector = document.getElementById('talkSelector');
+        selector.value = selectedTalk;
+        displaySelectedTalk();
+    }
+});
 
 function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
