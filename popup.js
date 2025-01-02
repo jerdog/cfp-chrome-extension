@@ -116,42 +116,94 @@ function copyToClipboard(text, button) {
 document.addEventListener('DOMContentLoaded', async () => {
     const customFieldsContainer = document.getElementById('customFields');
     const detailsContainer = document.getElementById('talkDetails');
+    const talkSelector = document.getElementById('talkSelector');
+    const levelFilter = document.getElementById('levelFilter');
+    const durationFilter = document.getElementById('durationFilter');
 
     // Always display custom fields
-    await displayCustomFields(customFieldsContainer);
+    if (customFieldsContainer) {
+        await displayCustomFields(customFieldsContainer);
+    }
 
     // Load talks into the selector
-    await loadTalkSelector();
+    const { talks = [] } = await chrome.storage.local.get(['talks']); // Ensure talks are fetched
+    if (talks.length > 0) {
+        updateTalkSelector(talks);
+    }
 
     // Load persisted selected talk if available
     const selectedTalk = await loadSelectedTalk();
     if (selectedTalk) {
-        const selector = document.getElementById('talkSelector');
-        selector.value = selectedTalk;
+        talkSelector.value = selectedTalk;
         await displaySelectedTalk();
     }
 
     // Add event listeners
-    document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
+    talkSelector.addEventListener('change', displaySelectedTalk);
 
     document.getElementById('resetView').addEventListener('click', async () => {
-        document.getElementById('levelFilter').value = '';
-        document.getElementById('durationFilter').value = '';
-        const selector = document.getElementById('talkSelector');
-        selector.value = '';
-
-        // Clear Talk Details
-        const detailsContainer = document.getElementById('talkDetails');
-        detailsContainer.innerHTML = ''; // Remove all content, including the header
-
-        // Reload custom fields
-        const customFieldsContainer = document.getElementById('customFields');
+        levelFilter.value = '';
+        durationFilter.value = '';
+        talkSelector.value = '';
+        await chrome.storage.local.remove(['selectedTalk']);
+        detailsContainer.innerHTML = ''; // Clear talk details
         if (customFieldsContainer) {
-            await displayCustomFields(customFieldsContainer);
+            await displayCustomFields(customFieldsContainer); // Reload custom fields
         }
+        updateTalkSelector(talks); // Reset the dropdown
+    });
+
+    levelFilter.addEventListener('change', () => {
+        applyFilters(talks);
+    });
+
+    durationFilter.addEventListener('change', () => {
+        applyFilters(talks);
     });
 
     document.getElementById('optionsLink').addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
     });
+
+    /**
+     * Filters the talks based on level and duration and updates the dropdown.
+     * @param {Array} talks - Array of all available talks.
+     */
+    function applyFilters(talks) {
+        if (!Array.isArray(talks)) {
+            console.error('Invalid talks array passed to applyFilters.');
+            return;
+        }
+
+        const levelFilterValue = levelFilter.value;
+        const durationFilterValue = durationFilter.value;
+
+        const filteredTalks = talks.filter(talk => {
+            const matchesLevel = !levelFilterValue || talk.level === levelFilterValue;
+            const matchesDuration = !durationFilterValue || String(talk.duration) === durationFilterValue;
+            return matchesLevel && matchesDuration;
+        });
+
+        updateTalkSelector(filteredTalks);
+    }
+
+    /**
+     * Updates the talk selector dropdown with the given talks.
+     * @param {Array} talks - Array of talks to display in the dropdown.
+     */
+    function updateTalkSelector(talks) {
+        if (!Array.isArray(talks)) {
+            console.error('Invalid talks array passed to updateTalkSelector.');
+            return;
+        }
+
+        talkSelector.innerHTML = '<option value="">Select a talk...</option>'; // Reset options
+
+        talks.forEach(talk => {
+            const option = document.createElement('option');
+            option.value = talk.title;
+            option.textContent = talk.title;
+            talkSelector.appendChild(option);
+        });
+    }
 });
