@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('optionsLink').addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
     });
+
+    document.getElementById('importCsv').addEventListener('change', handleImportCsv);
+    document.getElementById('downloadTemplate').addEventListener('click', handleDownloadTemplate);
 });
 
 async function loadTalkSelector() {
@@ -124,4 +127,45 @@ function copyToClipboard(text, button) {
             status.style.color = 'green';
         }, 2000);
     });
+}
+
+function handleImportCsv(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const content = e.target.result;
+        const rows = content.split('\n').map(row => row.split(','));
+
+        const talks = rows.slice(1).map(row => ({
+            title: row[0].trim(),
+            description: row[1].trim(),
+            duration: parseInt(row[2].trim()),
+            level: row[3].trim(),
+        })).filter(talk => talk.title);
+
+        const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+        const updatedTalks = [...existingTalks, ...talks];
+
+        await chrome.storage.local.set({ talks: updatedTalks });
+        await loadTalkSelector();
+
+        alert('Talks imported successfully!');
+    };
+
+    reader.readAsText(file);
+}
+
+function handleDownloadTemplate() {
+    const csvContent = 'Title,Description,Duration,Level\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'talks_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

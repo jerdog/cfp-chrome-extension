@@ -102,11 +102,8 @@ class OptionsPage {
         // Bind methods
         this.loadTalks = this.loadTalks.bind(this);
         this.renderTalks = this.renderTalks.bind(this);
-        this.handleEditTalk = this.handleEditTalk.bind(this);
-        this.handleDeleteTalk = this.handleDeleteTalk.bind(this);
-        this.handleAddTalk = this.handleAddTalk.bind(this);
-        this.handleSaveTalk = this.handleSaveTalk.bind(this);
-        this.handleDeleteAll = this.handleDeleteAll.bind(this);
+        this.handleImportCsv = this.handleImportCsv.bind(this);
+        this.handleDownloadTemplate = this.handleDownloadTemplate.bind(this);
         this.loadSessionizeUrl = this.loadSessionizeUrl.bind(this);
         this.saveSessionizeUrl = this.saveSessionizeUrl.bind(this);
     }
@@ -141,106 +138,116 @@ class OptionsPage {
 
         container.innerHTML = this.state.talks.map((talk, index) => `
             <div class="talk-item">
-                <div class="talk-details">
+                <div>
                     <strong>${talk.title}</strong> (${talk.duration} mins, ${talk.level})
                 </div>
-                <div class="button-group">
+                <div>
                     <button class="edit-btn" data-index="${index}">Edit</button>
                     <button class="delete-btn" data-index="${index}">Delete</button>
                 </div>
             </div>
         `).join('');
-
-        // Attach event listeners
-        container.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', this.handleEditTalk);
-        });
-
-        container.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', this.handleDeleteTalk);
-        });
     }
 
-    handleEditTalk(event) {
-        const index = event.target.dataset.index;
-        const talk = this.state.talks[index];
-        if (!talk) return;
+    handleImportCsv(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-        document.getElementById('talkTitle').value = talk.title;
-        document.getElementById('talkDescription').value = talk.description;
-        document.getElementById('talkDuration').value = talk.duration;
-        document.getElementById('talkLevel').value = talk.level;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target.result;
+            const rows = content.split('\n').map(row => row.split(','));
 
-        document.getElementById('saveTalkBtn').dataset.index = index;
-        this.openModal();
-    }
+            const talks = rows.slice(1).map(row => ({
+                title: row[0]?.trim() || '',
+                description: row[1]?.trim() || '',
+                duration: parseInt(row[2]?.trim() || '0', 10),
+                level: row[3]?.trim() || 'Beginner',
+            })).filter(talk => talk.title); // Filter out rows with empty titles
 
-    async handleDeleteTalk(event) {
-        const index = event.target.dataset.index;
-        const talks = this.state.talks.filter((_, i) => i != index);
+            if (talks.length === 0) {
+                alert('No valid talks found in the uploaded CSV file.');
+                document.getElementById('importCsv').value = ''; // Reset file input
+                return;
+            }
 
-        await chrome.storage.local.set({ talks });
-        this.state.talks = talks;
-        this.renderTalks();
-    }
+            const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+            const updatedTalks = [...existingTalks, ...talks];
 
-    async handleDeleteAll() {
-        if (!confirm('Are you sure you want to delete all talks?')) return;
+            await chrome.storage.local.set({ talks: updatedTalks });
+            this.loadTalks();
 
-        await chrome.storage.local.set({ talks: [] });
-        this.state.talks = [];
-        this.renderTalks();
-    }
-
-    handleAddTalk() {
-        document.getElementById('talkTitle').value = '';
-        document.getElementById('talkDescription').value = '';
-        document.getElementById('talkDuration').value = '';
-        document.getElementById('talkLevel').value = 'Beginner';
-
-        delete document.getElementById('saveTalkBtn').dataset.index;
-        this.openModal();
-    }
-
-    async handleSaveTalk() {
-        const index = document.getElementById('saveTalkBtn').dataset.index;
-        const newTalk = {
-            title: document.getElementById('talkTitle').value,
-            description: document.getElementById('talkDescription').value,
-            duration: parseInt(document.getElementById('talkDuration').value),
-            level: document.getElementById('talkLevel').value,
+            alert('Talks imported successfully!');
+            document.getElementById('importCsv').value = ''; // Reset file input
         };
 
-        if (index !== undefined) {
-            this.state.talks[index] = newTalk;
-        } else {
-            this.state.talks.push(newTalk);
-        }
-
-        await chrome.storage.local.set({ talks: this.state.talks });
-        this.renderTalks();
-        this.closeModal();
+        reader.readAsText(file);
     }
 
-    openModal() {
-        document.getElementById('addEditModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
 
-    closeModal() {
-        document.getElementById('addEditModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
+
+    handleDownloadTemplate() {
+        const csvContent = 'Title,Description,Duration,Level\n';
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'talks_template.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     async init() {
         await this.loadTalks();
         await this.loadSessionizeUrl();
 
-        document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
-        document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk.bind(this));
-        document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll.bind(this));
-        document.getElementById('closeModal').addEventListener('click', this.closeModal.bind(this));
+        // Other event listeners
         document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
+        document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
+        document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
+
+        // CSV Import/Upload Event Listener
+        document.getElementById('uploadCsvBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('importCsv');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a CSV file before uploading.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result;
+                const rows = content.split('\n').map(row => row.split(','));
+
+                const talks = rows.slice(1).map(row => ({
+                    title: row[0]?.trim() || '',
+                    description: row[1]?.trim() || '',
+                    duration: parseInt(row[2]?.trim() || '0', 10),
+                    level: row[3]?.trim() || 'Beginner',
+                })).filter(talk => talk.title); // Filter out rows with empty titles
+
+                if (talks.length === 0) {
+                    alert('No valid talks found in the uploaded CSV file.');
+                    fileInput.value = ''; // Reset file input
+                    return;
+                }
+
+                const { talks: existingTalks = [] } = await chrome.storage.local.get(['talks']);
+                const updatedTalks = [...existingTalks, ...talks];
+
+                await chrome.storage.local.set({ talks: updatedTalks });
+                this.loadTalks();
+
+                alert('Talks imported successfully!');
+                fileInput.value = ''; // Reset file input
+            };
+
+            reader.readAsText(file);
+        });
     }
 }
 

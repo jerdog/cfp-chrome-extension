@@ -6,8 +6,9 @@
     body { padding: 20px; max-width: 800px; margin: 0 auto; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; }
-    input[type="text"], textarea { width: 100%; padding: 5px; }
+    input[type="text"], textarea, input[type="file"] { width: 100%; padding: 5px; }
     button { padding: 8px 15px; }
+    a { color: #007bff; text-decoration: none; }
     .modal {
       display: none;
       position: fixed;
@@ -47,28 +48,32 @@
       border: 1px solid #ddd;
       border-radius: 4px;
     }
-    .talk-item .talk-details {
-      flex-grow: 1;
-    }
     .talk-item button {
       margin-left: 10px;
-      padding: 5px 10px;
-    }
-    .button-group {
-      display: flex;
-      gap: 5px;
     }
   </style>
 </head>
 <body>
   <h2>Settings</h2>
-  <div id="errorContainer" class="error"></div>
 
+  <!-- Sessionize URL Section -->
   <div class="form-group">
     <label for="sessionizeUrl">Sessionize API URL:</label>
     <input type="text" id="sessionizeUrl">
+    <button id="saveSessionizeBtn">Save</button>
   </div>
 
+  <!-- Import/Export Talks Section -->
+  <div class="form-group">
+    <h3>Import/Export Talks</h3>
+    <label for="importCsv">Import Talks (CSV):</label>
+    <input type="file" id="importCsv" accept=".csv">
+    <button id="uploadCsvBtn">Upload</button>
+    <br>
+    <a id="downloadTemplate" href="#">Download CSV Template</a>
+  </div>
+
+  <!-- Manage Talks Section -->
   <div class="form-group">
     <h3>Manage Talks</h3>
     <button id="addTalkBtn">Add Talk</button>
