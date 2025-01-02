@@ -86,36 +86,37 @@ async function displaySelectedTalk() {
     const selectedTitle = selector.value;
     const detailsContainer = document.getElementById('talkDetails');
 
-    if (!selectedTitle) {
-        detailsContainer.innerHTML = '';
-        return;
-    }
+    // Clear details container
+    detailsContainer.innerHTML = '';
 
-    await saveSelectedTalk(selectedTitle);
+    // Display custom fields regardless of selected talk
+    const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
+    customFields.forEach(field => {
+        detailsContainer.innerHTML += `
+            <div class="field-container">
+                <span class="field-label">${field.name}: </span> <span class="field-content">${field.value}</span>
+                <button class="copy-btn" data-value="${field.value}">Copy</button>
+                <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
+            </div>
+        `;
+    });
+
+    // If no talk is selected, stop here
+    if (!selectedTitle) return;
 
     const { talks = [] } = await chrome.storage.local.get(['talks']);
     const talk = talks.find(t => t.title === selectedTitle);
 
     if (!talk) return;
 
+    // Add talk-specific fields
     const orderedFields = ['title', 'description', 'duration', 'level'];
-    detailsContainer.innerHTML = orderedFields.map(field => `
-        <div class="field-container">
-            <div class="field-label">${field.charAt(0).toUpperCase() + field.slice(1)}:</div>
-            <div class="field-content">${talk[field]}</div>
-            <button class="copy-btn" data-value="${talk[field]}">Copy</button>
-            <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
-        </div>
-    `).join('');
-
-    // Add custom fields
-    const { customFields = [] } = await chrome.storage.sync.get(['customFields']);
-    customFields.forEach(field => {
+    orderedFields.forEach(field => {
         detailsContainer.innerHTML += `
             <div class="field-container">
-                <div class="field-label">${field.name}:</div>
-                <div class="field-content">${field.value}</div>
-                <button class="copy-btn" data-value="${field.value}">Copy</button>
+                <div class="field-label">${field.charAt(0).toUpperCase() + field.slice(1)}:</div>
+                <div class="field-content">${talk[field]}</div>
+                <button class="copy-btn" data-value="${talk[field]}">Copy</button>
                 <span class="copy-status" style="display: none; margin-left: 10px; color: green;">Copied!</span>
             </div>
         `;
@@ -129,16 +130,6 @@ async function displaySelectedTalk() {
         });
     });
 }
-
-// Load persisted talk on popup open
-document.addEventListener('DOMContentLoaded', async () => {
-    const selectedTalk = await loadSelectedTalk();
-    if (selectedTalk) {
-        const selector = document.getElementById('talkSelector');
-        selector.value = selectedTalk;
-        displaySelectedTalk();
-    }
-});
 
 function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
@@ -201,3 +192,27 @@ function handleDownloadTemplate() {
     link.click();
     document.body.removeChild(link);
 }
+
+// Load persisted talk on popup open
+document.addEventListener('DOMContentLoaded', async () => {
+    const selectedTalk = await loadSelectedTalk();
+    if (selectedTalk) {
+        const selector = document.getElementById('talkSelector');
+        selector.value = selectedTalk;
+        displaySelectedTalk();
+    }
+});
+
+document.getElementById('resetView').addEventListener('click', async () => {
+    // Clear filters
+    document.getElementById('levelFilter').value = '';
+    document.getElementById('durationFilter').value = '';
+
+    // Clear selected talk
+    const selector = document.getElementById('talkSelector');
+    selector.value = '';
+    await chrome.storage.local.remove(['selectedTalk']);
+
+    // Refresh the details view
+    displaySelectedTalk();
+});
