@@ -2,10 +2,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadTalkSelector();
 
     document.getElementById('fetchSessionize').addEventListener('click', async () => {
+        const fetchButton = document.getElementById('fetchSessionize');
+        let statusMessage = document.getElementById('fetchStatus');
+
+        if (!statusMessage) {
+            statusMessage = document.createElement('span');
+            statusMessage.id = 'fetchStatus';
+            statusMessage.style.marginLeft = '10px';
+            statusMessage.style.fontSize = '0.9em';
+            fetchButton.insertAdjacentElement('afterend', statusMessage);
+        }
+
         try {
             const { sessionizeUrl } = await chrome.storage.sync.get(['sessionizeUrl']);
             if (!sessionizeUrl) {
-                alert('Please set your Sessionize API URL in the extension settings first');
+                statusMessage.textContent = 'Please set your Sessionize API URL in the settings';
+                statusMessage.style.color = 'red';
                 return;
             }
 
@@ -23,11 +35,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await chrome.storage.local.set({ talks: formattedTalks });
             await loadTalkSelector();
-            alert(`Successfully loaded ${formattedTalks.length} talks`);
+
+            statusMessage.textContent = `Successfully loaded ${formattedTalks.length} talks`;
+            statusMessage.style.color = 'green';
         } catch (error) {
             console.error('Error fetching from Sessionize:', error);
-            alert('Failed to fetch talks from Sessionize. Check the URL and try again.');
+            statusMessage.textContent = 'Failed to fetch talks. Check the URL.';
+            statusMessage.style.color = 'red';
         }
+
+        setTimeout(() => {
+            statusMessage.textContent = '';
+        }, 3000);
     });
 
     document.getElementById('talkSelector').addEventListener('change', displaySelectedTalk);
@@ -101,6 +120,3 @@ function copyToClipboard(text, button) {
         }, 2000);
     });
 }
-
-
-
