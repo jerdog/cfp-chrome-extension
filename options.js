@@ -169,15 +169,35 @@ class OptionsPage {
         container.innerHTML = customFields.map((field, index) => `
             <div class="custom-field-item">
                 <div class="custom-field-details">
-                    <strong>${field.name}:</strong>
+                    <strong>${field.name}:</strong> ${field.value}
                 </div>
-                <div> ${field.value} </div>
                 <div>
                     <button class="edit-custom-field-btn" data-index="${index}">Edit</button>
                     <button class="delete-custom-field-btn" data-index="${index}">Delete</button>
                 </div>
             </div>
         `).join('');
+
+        // Add event listeners
+        container.querySelectorAll('.edit-custom-field-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const index = parseInt(button.dataset.index, 10);
+                const customFields = await CustomFieldsManager.getCustomFields();
+                const field = customFields[index];
+                document.getElementById('customFieldName').value = field.name;
+                document.getElementById('customFieldValue').value = field.value;
+                document.getElementById('saveCustomFieldBtn').dataset.index = index;
+                this.openCustomFieldModal();
+            });
+        });
+
+        container.querySelectorAll('.delete-custom-field-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const index = parseInt(button.dataset.index, 10);
+                await CustomFieldsManager.deleteCustomField(index);
+                await this.loadCustomFields();
+            });
+        });
     }
 
     async saveCustomField() {
