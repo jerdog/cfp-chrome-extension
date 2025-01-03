@@ -2,6 +2,9 @@
 
 The CFP Chrome Extension is a Chrome extension designed to streamline the process of managing and submitting conference talk proposals. It allows users to add, edit, delete, and manage talks, as well as import and export talks from a JSON file or the Sessionize API.
 
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/jerdog/cfp-chrome-extension)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **Note:** Currently pending approval for inclusion in the Chrome Web Store. You can download manually on the Releases link.
 
 ## Features
@@ -15,6 +18,11 @@ The CFP Chrome Extension is a Chrome extension designed to streamline the proces
   - Export and import settings for the extension.
 - **Custom Fields**
   - Add custom fields for easier data entry, such as your LinkedIn profile, GitHub repository, etc.
+
+## Version History
+
+- **[1.0.1](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.0.1)**: Resolved a few issues with copying + sorting.
+- **[1.0.0](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.0.0)**: Initial release.
 
 ## Installation
 
@@ -86,7 +94,6 @@ Note: The following fields are by default taken from the Sessionize API. If you 
   - **Filters:** Filter talks by `level` or `duration`.
   - **Reset:** Reset the view.
 - **Custom Fields**: View the fields you setup in the Options page, and copy them to be pasted.
-- **Fetch from Sessionize**: Fetch data from Sessionize if there isn't already data in the dropdown.
 - **Settings page**: Quickly navigate to the Options page.
 
 ## File Overview
