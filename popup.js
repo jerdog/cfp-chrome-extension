@@ -29,7 +29,7 @@ async function displayCustomFields(container) {
 }
 
 /**
- * Updates the talk selector dropdown with the given talks.
+ * Updates the talk selector dropdown with the given talks, sorted alphabetically.
  * @param {Array} talks - Array of talks to display in the dropdown.
  */
 function updateTalkSelector(talks) {
@@ -42,17 +42,16 @@ function updateTalkSelector(talks) {
     // Reset dropdown
     talkSelector.innerHTML = '<option value="">Select a talk...</option>';
 
-    // Populate dropdown with talks
-    if (Array.isArray(talks) && talks.length > 0) {
-        talks.forEach(talk => {
-            const option = document.createElement('option');
-            option.value = talk.title;
-            option.textContent = talk.title;
-            talkSelector.appendChild(option);
-        });
-    } else {
-        console.warn('No talks available to populate the selector.');
-    }
+    // Sort talks alphabetically by title
+    const sortedTalks = talks.slice().sort((a, b) => a.title.localeCompare(b.title));
+
+    // Populate dropdown with sorted talks
+    sortedTalks.forEach(talk => {
+        const option = document.createElement('option');
+        option.value = talk.title;
+        option.textContent = talk.title;
+        talkSelector.appendChild(option);
+    });
 }
 
 /**
