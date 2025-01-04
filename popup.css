@@ -1,0 +1,65 @@
+body {
+      width: 400px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    .talk-selector {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .link-button {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .filters {
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+    }
+    .talk-details {
+      margin-top: 15px;
+    }
+    .field-container {
+      margin-bottom: 10px;
+    }
+    .field-container:hover {
+      background-color: #f5f5f5;
+    }
+    .field-label {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .field-content {
+      word-wrap: break-word;
+      margin-bottom: 4px;
+    }
+    .copy-btn {
+      padding: 4px 8px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: #e0e0e0;
+    }
+    .actions {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    .custom-field-input {
+        width: 100%;
+        padding: 4px;
+        margin: 4px 0;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
