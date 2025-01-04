@@ -274,7 +274,7 @@ class ErrorHandler {
           const container = document.getElementById('customFieldsContainer');
           container.innerHTML = customFields.map((field, index) => `
               <div class="custom-field-item">
-                  <div class="custom-field-details">
+                  <div>
                       <strong>${field.name}:</strong> ${field.value}
                   </div>
                   <div>

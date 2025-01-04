@@ -10,65 +10,73 @@
   <p>View on <a href="https://github.com/jerdog/cfp-chrome-extension" target="_blank">GitHub</a></p>
   <h2>Settings</h2>
 
-  <!-- General Settings Management -->
-  <div class="form-group">
-    <h3>Settings Management</h3>
-    <button id="exportSettingsBtn">Export Settings (JSON)</button>
-    <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
-    <button id="importSettingsBtn">Import Settings (JSON)</button>
-  </div>
+    <!-- General Settings Section -->
+    <div class="section">
+      <h2>General Settings</h2>
+      <div class="general-settings">
+          <!-- First Column: Export Settings and Custom Fields -->
+          <div class="column">
+              <div class="form-group">
+                  <h3>Import/Export Settings (JSON)</h3>
+                  <button id="exportSettingsBtn">Export Settings</button>
+                  <input type="file" id="importSettingsInput" accept=".json" style="display: none;">
+                  <button id="importSettingsBtn">Import Settings</button>
+              </div>
+              <div class="form-group">
+                <h3>Import/Export Talks</h3>
+                  <label for="sessionizeUrl">Sessionize API URL:</label>
+                  <input type="text" id="sessionizeUrl">
+                  <button id="saveSessionizeBtn" style="margin: 10px 0 10px 0;">Save</button>
+                  <button id="fetchSessionizeBtn">Fetch Talks</button>
+                  <p id="fetchSessionizeStatus" style="margin: 10px 0 10px 0;"></p>
+                  <p id="saveSessionizeUrlStatus" style="margin: 10px 0 10px 0;"></p>
+                <label for="importJson">Import Talks:</label>
+                <input type="file" id="importJson" accept=".json">
+                <button id="importJsonBtn" style="margin: 10px 0 10px 0;">Upload</button>
+                <button id="exportJsonBtn">Export Talks</button>
+              </div>
+          </div>
+          <!-- Second Column: Import/Export Talks -->
+          <div class="column">
+            <div class="form-group">
+              <h3>Manage Custom Fields</h3>
+              <div id="customFieldsContainer" class="container"></div>
+              <div>
+                  <button id="addCustomFieldBtn" style="margin: 10px 0 10px 0;">Add Custom Field</button>
+                  <button id="resetCustomFieldsBtn" style="margin: 10px 0 10px 0;">Reset Custom Fields</button>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
 
-  <!-- Import/Export Talks Section -->
-  <div class="form-group">
-    <h3>Import/Export Talks</h3>
-    <!-- Sessionize URL Section -->
-    <div class="form-section">
-      <label for="sessionizeUrl">Sessionize API URL:</label>
-      <input type="text" id="sessionizeUrl">
-      <button id="saveSessionizeBtn" style="margin-right: 10px;">Save</button>
-      <button id="fetchSessionizeBtn">Fetch Talks</button>
-      <p id="fetchSessionizeStatus" style="margin-left: 10px; font-size: 0.9em;"></p>
-      <p id="saveSessionizeUrlStatus" style="margin-left: 10px; font-size: 0.9em;"></p>
+    <!-- Add/Edit Custom Field Modal -->
+    <div class="modal" id="addCustomFieldModal">
+      <h3 id="customFieldModalTitle">Add/Edit Custom Field</h3>
+      <div class="form-group">
+          <label for="customFieldName">Field Name:</label>
+          <input type="text" id="customFieldName">
+      </div>
+      <div class="form-group">
+          <label for="customFieldValue">Field Value:</label>
+          <input type="text" id="customFieldValue">
+      </div>
+      <div class="form-actions">
+          <button id="saveCustomFieldBtn">Save</button>
+          <button type="button" id="closeCustomFieldModalBtn">Cancel</button>
+      </div>
     </div>
-    <!-- Import/Export JSON Section -->
-    <div>
-      <input type="file" id="importJson" accept=".json" style="display: none;">
-      <button id="importJsonBtn">Import Talks (JSON)</button>
-      <button id="exportJsonBtn">Export Talks (JSON)</button>
-      <p>Example JSON structure:</p>
-    </div>
-  </div>
-
-  <!-- Manage Custom Fields Section -->
-  <div class="form-group">
-      <h3>Manage Custom Fields</h3>
-      <div id="customFieldsContainer" class="container"></div>
-      <button id="addCustomFieldBtn">Add Custom Field</button>
-  </div>
-
-  <!-- Add/Edit Custom Field Modal -->
-  <div class="modal" id="addCustomFieldModal">
-    <h3 id="customFieldModalTitle">Add/Edit Custom Field</h3>
-    <div class="form-group">
-        <label for="customFieldName">Field Name:</label>
-        <input type="text" id="customFieldName">
-    </div>
-    <div class="form-group">
-        <label for="customFieldValue">Field Value:</label>
-        <input type="text" id="customFieldValue">
-    </div>
-    <div class="form-actions">
-        <button id="saveCustomFieldBtn">Save</button>
-        <button type="button" id="closeCustomFieldModalBtn">Cancel</button>
-    </div>
-  </div>
 
   <!-- Manage Talks Section -->
-  <div class="form-group">
-    <h3>Manage Talks</h3>
-    <button id="addTalkBtn">Add Talk</button>
-    <button id="deleteAllBtn">Delete All Talks</button>
-    <div id="talksContainer" class="container"></div>
+  <div class="section">
+      <h2>Manage Talks</h2>
+      <div class="form-group">
+          <div>
+              <button id="addTalkBtn" style="margin: 10px 0 10px 0;">Add Talk</button>
+              <button id="deleteAllBtn" style="margin: 10px 0 10px 0;">Delete All Talks</button>
+          </div>
+          <div id="talksContainer"></div>
+      </div>
   </div>
 
   <!-- Add/Edit Talk Modal -->
