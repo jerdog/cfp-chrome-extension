@@ -2,11 +2,10 @@
   "manifest_version": 3,
   "name": "CFP Manager",
   "version": "1.0.1",
-  "description": "The CFP Chrome Extension is a Chrome extension designed to streamline the process of managing and submitting conference talk proposals. It allows users to add, edit, delete, and manage talks, as well as import and export talks from a JSON file or the Sessionize API.",
+  "description": "The CFP Extension streamlines the process of managing & submitting conference talk proposals across different systems for speakers.",
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "action": {
     "default_popup": "popup.html"
