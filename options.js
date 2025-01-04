@@ -514,6 +514,7 @@ class ErrorHandler {
           document.getElementById('fetchSessionizeBtn').addEventListener('click', this.fetchSessionizeTalks);
           document.getElementById('addTalkBtn').addEventListener('click', this.handleAddTalk);
           document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk);
+          document.getElementById('closeModal').addEventListener('click', this.closeTalkModal);
           document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
           document.getElementById('addCustomFieldBtn').addEventListener('click', this.openCustomFieldModal.bind(this));
           document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
