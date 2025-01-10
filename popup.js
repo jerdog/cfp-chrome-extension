@@ -137,7 +137,7 @@ async function displaySelectedTalk() {
 
     if (!talk) return;
 
-    const orderedFields = ['title', 'description', 'duration', 'level'];
+    const orderedFields = ['title', 'description', 'duration', 'level', 'pitch', 'notes'];
     orderedFields.forEach(field => {
         const fieldValue = talk[field] !== undefined ? talk[field] : 'N/A'; // Handle undefined values
         detailsContainer.innerHTML += `
