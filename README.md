@@ -2,9 +2,10 @@
 
 The CFP Chrome Extension is a Chrome extension designed to streamline the process of managing and submitting conference talk proposals. It allows users to add, edit, delete, and manage talks, as well as import and export talks from a JSON file or the Sessionize API.
 
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/jerdog/cfp-chrome-extension)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/jerdog/cfp-chrome-extension)
 [![CFP Manager](https://img.shields.io/badge/Chrome-Extension-white)](https://chromewebstore.google.com/detail/cfp-manager/looljpijpobfennpfmiipmnndacbmdoa)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/buy_me_a_coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/jerdog)
 
 [![available in Chrome Web Store](icons/avail_in_chrome_store.png)](https://chromewebstore.google.com/detail/cfp-manager/looljpijpobfennpfmiipmnndacbmdoa)
 
@@ -22,6 +23,7 @@ The CFP Chrome Extension is a Chrome extension designed to streamline the proces
 
 ## Version History
 
+- **[1.1.0](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.1.0)**: Fixed Custom Field logic. Cleaned up code.
 - **[1.0.3](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.0.3)**: Added elevator pitch and notes fields + fixed editing.
 - **[1.0.2](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.0.2)**: Cleaned up CSS and styled options page.
 - **[1.0.1](https://github.com/jerdog/cfp-chrome-extension/releases/tag/v1.0.1)**: Resolved a few issues with copying + sorting.

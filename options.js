@@ -84,8 +84,9 @@ class ErrorHandler {
     static async saveCustomField(field) {
         try {
             const customFields = await this.getCustomFields();
-            customFields.push(field);
+            customFields.push(field);  // Add new field
             await chrome.storage.sync.set({ customFields });
+            // console.log('Saved custom field:', field);
             return true;
         } catch (error) {
             ErrorHandler.handleApiError(error, 'save custom field');
@@ -102,6 +103,18 @@ class ErrorHandler {
         } catch (error) {
             ErrorHandler.handleApiError(error, 'delete custom field');
             return false;
+        }
+    }
+
+    static async resetCustomFields() {
+        const confirmation = confirm('Are you sure you want to reset all custom fields? This action cannot be undone.');
+        if (confirmation) {
+            await chrome.storage.sync.set({ customFields: [] });  // Clear all custom fields
+            console.log('Custom fields have been reset.');
+            return true;  // Return true for success
+        } else {
+            console.log('Reset operation canceled by the user.');
+            return false;  // Return false if user canceled
         }
     }
   }
@@ -272,36 +285,37 @@ class ErrorHandler {
       async loadCustomFields() {
           const customFields = await CustomFieldsManager.getCustomFields();
           const container = document.getElementById('customFieldsContainer');
-          container.innerHTML = customFields.map((field, index) => `
-              <div class="custom-field-item">
-                  <div>
-                      <strong>${field.name}:</strong> ${field.value}
-                  </div>
-                  <div>
-                      <span class="edit-custom-field-btn" data-index="${index}" title="Edit">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
-                              <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"></path>
-                          </svg>
-                      </span>
-                      <span class="delete-custom-field-btn" data-index="${index}" title="Delete">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
-                              <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path>
-                          </svg>
-                      </span>
-                  </div>
-              </div>
-          `).join('');
+          container.innerHTML = '';  // Clear previous content
+
+          customFields.forEach((field,index) => {
+            container.innerHTML += `
+                <div class="custom-field-item">
+                    <div>
+                        <strong>${field.name}:</strong> ${field.value}
+                    </div>
+                    <div>
+                        <span class="edit-custom-field-btn" data-index="${index}" title="Edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+                                <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"></path>
+                            </svg>
+                        </span>
+                        <span class="delete-custom-field-btn" data-index="${index}" title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+                                <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+            `});
 
           // Add event listeners
           container.querySelectorAll('.edit-custom-field-btn').forEach(button => {
               button.addEventListener('click', async (e) => {
                   const index = parseInt(button.dataset.index, 10);
-                  const customFields = await CustomFieldsManager.getCustomFields();
                   const field = customFields[index];
                   document.getElementById('customFieldName').value = field.name;
                   document.getElementById('customFieldValue').value = field.value;
-                  document.getElementById('saveCustomFieldBtn').dataset.index = index;
-                  this.openCustomFieldModal();
+                  this.openCustomFieldModal(true, index);
               });
           });
 
@@ -315,25 +329,44 @@ class ErrorHandler {
       }
 
       async saveCustomField() {
-          const name = document.getElementById('customFieldName').value.trim();
-          const value = document.getElementById('customFieldValue').value.trim();
+        const name = document.getElementById('customFieldName').value.trim();
+        const value = document.getElementById('customFieldValue').value.trim();
 
-          if (!name) {
-              alert('Field name is required.');
-              return;
-          }
+        if (!name) {
+            alert('Field name is required.');
+            return;
+        }
 
-          const index = document.getElementById('saveCustomFieldBtn').dataset.index;
-          if (index !== undefined) {
-              const customFields = await CustomFieldsManager.getCustomFields();
-              customFields[index] = { name, value };
-              await chrome.storage.sync.set({ customFields });
-          } else {
-              await CustomFieldsManager.saveCustomField({ name, value });
-          }
+        let index = document.getElementById('saveCustomFieldBtn').dataset.index;  // index is undefined or null for add mode
+        const customFields = await CustomFieldsManager.getCustomFields();
 
-          await this.loadCustomFields();
-          this.closeCustomFieldModal();
+        if (index === undefined || index === null || index === '') {
+            // Add new field if index is not set
+            customFields.push({ name, value });
+            // console.log('Added new custom field:', { name, value });
+        } else {
+            // Edit existing field
+            index = parseInt(index, 10);
+            if (isNaN(index)) {
+                console.error('Invalid index for editing custom field.');
+                return;
+            }
+            customFields[index] = { name, value };
+            // console.log(`Updated custom field at index ${index}:`, customFields[index]);
+        }
+
+        await chrome.storage.sync.set({ customFields });
+        // console.log('Custom fields saved:', customFields);
+        await this.loadCustomFields();  // Refresh the UI to show the new/updated field
+        this.closeCustomFieldModal();  // Close modal
+      }
+
+      async resetCustomFields() {
+        const success = await CustomFieldsManager.resetCustomFields();
+        if (success) {
+            await this.loadCustomFields();  // Refresh UI if fields were reset
+            alert('All custom fields have been reset.');
+        }
       }
 
       async exportTalksAsJson() {
@@ -471,6 +504,11 @@ class ErrorHandler {
           document.getElementById('modalBackdrop').style.display = 'none';
       }
 
+      closeCustomFieldModal() {
+          document.getElementById('addCustomFieldModal').style.display = 'none';
+          document.getElementById('modalBackdrop').style.display = 'none';
+      }
+
       async importTalksFromJson(event) {
           const file = event.target.files[0];
           if (!file) return;
@@ -506,15 +544,27 @@ class ErrorHandler {
           reader.readAsText(file);
       }
 
-      openCustomFieldModal() {
-          document.getElementById('addCustomFieldModal').style.display = 'block';
-          document.getElementById('modalBackdrop').style.display = 'block';
-      }
+      openCustomFieldModal(isEdit = false, index = null) {
+        const modalTitle = document.getElementById('customFieldModalTitle');
+        const fieldNameInput = document.getElementById('customFieldName');
+        const fieldValueInput = document.getElementById('customFieldValue');
+        const saveButton = document.getElementById('saveCustomFieldBtn');
 
-      closeCustomFieldModal() {
-          document.getElementById('addCustomFieldModal').style.display = 'none';
-          document.getElementById('modalBackdrop').style.display = 'none';
-      }
+        if (!isEdit) {
+            // Add mode: clear fields and remove dataset index
+            fieldNameInput.value = '';
+            fieldValueInput.value = '';
+            delete saveButton.dataset.index;  // Ensure index is not set
+            modalTitle.textContent = 'Add Custom Field';
+        } else {
+            // Edit mode: set dataset index
+            modalTitle.textContent = 'Edit Custom Field';
+            saveButton.dataset.index = index;  // Set index for editing
+        }
+
+        document.getElementById('addCustomFieldModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
 
       async init() {
           await this.loadTalks();
@@ -528,9 +578,12 @@ class ErrorHandler {
           document.getElementById('saveTalkBtn').addEventListener('click', this.handleSaveTalk);
           document.getElementById('closeModal').addEventListener('click', this.closeTalkModal);
           document.getElementById('deleteAllBtn').addEventListener('click', this.handleDeleteAll);
-          document.getElementById('addCustomFieldBtn').addEventListener('click', this.openCustomFieldModal.bind(this));
+          document.getElementById('addCustomFieldBtn').addEventListener('click', () => {
+            this.openCustomFieldModal(false);  // Open modal in "add" mode
+            });
           document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
           document.getElementById('closeCustomFieldModalBtn').addEventListener('click', this.closeCustomFieldModal.bind(this));
+          document.getElementById('resetCustomFieldsBtn').addEventListener('click', this.resetCustomFields.bind(this));
           document.getElementById('exportSettingsBtn').addEventListener('click', this.exportSettings);
           document.getElementById('importSettingsBtn').addEventListener('click', () => {
               document.getElementById('importSettingsInput').click();
