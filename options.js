@@ -547,27 +547,9 @@ class ErrorHandler {
     }
 
       async init() {
-        const observer = new MutationObserver(() => {
-            const closeCustomFieldModalBtn = document.getElementById('closeCustomFieldModalBtn');
-            if (closeCustomFieldModalBtn) {
-                closeCustomFieldModalBtn.addEventListener('click', this.closeCustomFieldModal.bind(this));
-                observer.disconnect();  // Stop observing once the element is found
-            }
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-
           await this.loadTalks();
           await this.loadSessionizeUrl();
           await this.loadCustomFields();
-
-          // Add event listener for the custom field modal close button
-          const closeCustomFieldModalBtn = document.querySelector('#closeCustomFieldModalBtn');
-          if (closeCustomFieldModalBtn) {
-              closeCustomFieldModalBtn.addEventListener('click', this.closeCustomFieldModal.bind(this));
-          } else {
-              console.warn('Close button for custom field modal not found.');
-          }
 
           // Other event listeners
           document.getElementById('saveSessionizeBtn').addEventListener('click', this.saveSessionizeUrl);
