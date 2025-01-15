@@ -105,6 +105,18 @@ class ErrorHandler {
             return false;
         }
     }
+
+    static async resetCustomFields() {
+        const confirmation = confirm('Are you sure you want to reset all custom fields? This action cannot be undone.');
+        if (confirmation) {
+            await chrome.storage.sync.set({ customFields: [] });  // Clear all custom fields
+            console.log('Custom fields have been reset.');
+            return true;  // Return true for success
+        } else {
+            console.log('Reset operation canceled by the user.');
+            return false;  // Return false if user canceled
+        }
+    }
   }
   class OptionsPage {
       constructor() {
@@ -347,7 +359,15 @@ class ErrorHandler {
         // console.log('Custom fields saved:', customFields);
         await this.loadCustomFields();  // Refresh the UI to show the new/updated field
         this.closeCustomFieldModal();  // Close modal
-    }
+      }
+
+      async resetCustomFields() {
+        const success = await CustomFieldsManager.resetCustomFields();
+        if (success) {
+            await this.loadCustomFields();  // Refresh UI if fields were reset
+            alert('All custom fields have been reset.');
+        }
+      }
 
       async exportTalksAsJson() {
           const { talks = [] } = await chrome.storage.local.get(['talks']);
@@ -563,6 +583,7 @@ class ErrorHandler {
             });
           document.getElementById('saveCustomFieldBtn').addEventListener('click', this.saveCustomField.bind(this));
           document.getElementById('closeCustomFieldModalBtn').addEventListener('click', this.closeCustomFieldModal.bind(this));
+          document.getElementById('resetCustomFieldsBtn').addEventListener('click', this.resetCustomFields.bind(this));
           document.getElementById('exportSettingsBtn').addEventListener('click', this.exportSettings);
           document.getElementById('importSettingsBtn').addEventListener('click', () => {
               document.getElementById('importSettingsInput').click();
